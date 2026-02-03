@@ -1,0 +1,34 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.autoIndent": "full",
+  "editor.detectIndentation": false,
+  "editor.insertSpaces": false,
+  "editor.tabSize": 4,
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "files.associations": {
+	"*.cls": "apex",
+	"*.trigger": "apex"
+  },
+  "editor.wordBasedSuggestions": "currentDocument",
+  "accessibility.signals.lineHasInlineSuggestion": {
+    "sound": "on"
+  },
+  "prettier.useEditorConfig": true,
+  "search.searchView.keywordSuggestions": true,
+  "salesforcedx-vscode-core.clearOutputTab": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "files.insertFinalNewline": true,
+  "search.exclude": {
+    "**/.sfdx": true,
+    "**/.sf": true
+  },
+
+  "files.exclude": {
+    "**/.sfdx": true,
+    "**/.sf": true
+},
+"xml.preferences.showSchemaDocumentationType": "none"
+}

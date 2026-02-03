@@ -1,0 +1,30 @@
+<template>
+	<!-- <template if:true={showknowledge}> -->
+	<template if:true={showAgentAssist}>
+		<div class="container">
+			<div lwc:ref="container" onscroll={handleScroll} class="card-container">
+				<c-aa_knowledge-message
+					record-id={recordId}
+					onloading={handleLoading}
+					onbottom={handleBottom}
+					is-jump-in-present-visible={isJumpInPresentVisible}
+					onreplycard={handleReplyCard}
+				></c-aa_knowledge-message>
+			</div>
+			<c-aa_ask-me-anything
+				reply-card={replyCard}
+				is-loading={isLoading}
+				onreplyclosed={handleReplyClosed}
+			></c-aa_ask-me-anything>
+		</div>
+	</template>
+	<template if:false={showknowledge}>
+		<!-- Display access denied message -->
+		<div class="permissioncontainer">
+			<p class="permissionaccess">
+				You do not have permission to view Knowledge Card of Agent Assist,<br />
+				please contact your Admin.
+			</p>
+		</div>
+	</template>
+</template>

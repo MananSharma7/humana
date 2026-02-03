@@ -1,0 +1,38 @@
+<template>
+	<template lwc:if={error}>
+		<div class="knowledge-error">
+			<span
+				><lightning-icon
+					icon-name="utility:error"
+					alternative-text="error"
+					size="x-small"
+					title="error"
+					class="custom-icon-error"
+				></lightning-icon>
+			</span>
+			<span style="margin-left: 5px">{errorMessage}</span>
+		</div>
+	</template>
+	<template lwc:else>
+		<template if:true={showComponent}>
+			<template if:true={isLoading}>
+				<p class="slds-p-around_xx-small">Loading Agent Assist...</p>
+			</template>
+			<template if:false={isLoading}>
+				<div class="container">
+					<c-aa_knowledge-agent-assist record-id={recordId}></c-aa_knowledge-agent-assist>
+					<c-aa_interaction360 record-id={recordId} onexpand={handleExpand}></c-aa_interaction360>
+				</div>
+			</template>
+		</template>
+		<template if:false={showComponent}>
+			<!-- Display access denied message -->
+			<div class="permissioncontainer">
+				<p class="permissionaccess">
+					You do not have permission to view Agent Assist,<br />
+					please contact your Admin.
+				</p>
+			</div>
+		</template>
+	</template>
+</template>

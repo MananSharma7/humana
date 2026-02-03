@@ -1,0 +1,36 @@
+:host {
+	max-height: 100vh;
+	height: 100%;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	max-height: 100vh;
+}
+
+.permissioncontainer {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #f2f2f2;
+	height: 100%;
+	width: 100%;
+}
+
+.permissionaccess {
+	font-weight: bold;
+	text-align: center;
+}
+
+.knowledge-error {
+	padding: 10px;
+	background: #e53935;
+	color: #fff;
+	border-radius: 5px;
+	margin: 5px 0;
+}
+.custom-icon-error {
+	--slds-c-icon-color-foreground-default: #fafafa;
+}

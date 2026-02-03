@@ -1,0 +1,378 @@
+<template>
+	<div class="container">
+		<!--error-->
+		<template lwc:if={error}>
+			<div class="knowledge-error">
+				<span
+					><lightning-icon
+						icon-name="utility:error"
+						alternative-text="error"
+						size="x-small"
+						title="error"
+						class="custom-icon-error"
+					></lightning-icon>
+				</span>
+				<span style="margin-left: 5px">{errorMessage}</span>
+			</div>
+		</template>
+		<template lwc:else>
+			<template if:true={cards}>
+				<template for:each={cards} for:item="card">
+					<div
+						data-is-loading={card.isLoading}
+						data-is-abandoned={card.isAbandoned}
+						key={card.card_id}
+						data-card-id={card.card_id}
+						class="card"
+					>
+						<div class="card-details">
+							<div class="card-header">
+								<template if:true={card.isCompleted}>
+									<template if:true={card.card_AMA}>
+										<lightning-icon
+											icon-name="utility:app_web_messaging"
+											alternative-text="app_web_messaging"
+											size="small"
+											title="app_web_messaging"
+										>
+										</lightning-icon>
+									</template>
+									<template if:false={card.card_AMA}>
+										<lightning-icon
+											class="card-status--icon"
+											icon-name="action:approval"
+											alternative-text="approval"
+											size="xx-small"
+											title="approval"
+										>
+										</lightning-icon>
+									</template>
+								</template>
+								<template if:true={card.isLoading}>
+									<div>
+										<span class="loader"></span>
+									</div>
+								</template>
+								<template if:true={card.isAbandoned}>
+									<lightning-icon
+										icon-name="utility:error"
+										alternative-text="error"
+										size="x-small"
+										title="error"
+										style="--lwc-squareIconUtilitySmall: 20px"
+									>
+									</lightning-icon>
+								</template>
+								<template if:true={card.isSummary}>
+									<lightning-icon
+										icon-name="custom:custom18"
+										alternative-text="error"
+										size="x-small"
+										title="summary"
+										class="card-status--icon"
+										style="--lwc-squareIconcustomSmall: 20px"
+									>
+									</lightning-icon>
+								</template>
+								<h1 class="slds-text-heading_small">{card.header}</h1>
+								<div class="card-actions">
+									<template if:true={card.isMinimized}>
+										<lightning-icon
+											icon-name="utility:chevronright"
+											alternative-text="Expand"
+											size="x-small"
+											title="Expand"
+											onclick={toggleMinimize}
+											data-id={card.card_id}
+											class="action-icon"
+										></lightning-icon>
+									</template>
+									<template if:false={card.isMinimized}>
+										<lightning-icon
+											icon-name="utility:chevrondown"
+											alternative-text="Minimize"
+											size="x-small"
+											title="Minimize"
+											onclick={toggleMinimize}
+											data-id={card.card_id}
+											class="action-icon"
+										></lightning-icon>
+									</template>
+								</div>
+							</div>
+
+							<div class={card.contentClass}>
+								<template lwc:if={card.replyContext}>
+									<div
+										class="reply-input-native"
+										onclick={handleContextClick}
+										data-id={card.replyContext.card_id}
+									>
+										<span class="slds-truncate" title={card.replyContext.header}
+											>{card.replyContext.header}</span
+										>
+									</div>
+								</template>
+								<!--Postcall summary-->
+								<template lwc:if={card.isSummary}>
+									<div class="card-description">
+										<!-- Reason for Call -->
+										<template lwc:if={card.reasonForCall}>
+											<h2 class="slds-text-heading_small">Reason for Call</h2>
+											<p class="card-text" style="margin-top: 3px">{card.reasonForCall}</p>
+										</template>
+										<!-- Completed Actions -->
+										<template lwc:if={card.completedActions}>
+											<h2 class="slds-text-heading_small" style="margin-top: 3px">
+												Completed Actions
+											</h2>
+											<ul>
+												<template for:each={card.completedActions} for:item="action">
+													<li style="margin-top: 3px" key={action.text}>{action.text}</li>
+												</template>
+											</ul>
+										</template>
+
+										<!-- Pending Actions -->
+										<template lwc:if={card.pendingActions}>
+											<h2 class="slds-text-heading_small" style="margin-top: 3px">
+												Pending Actions
+											</h2>
+											<ul>
+												<template for:each={card.pendingActions} for:item="action">
+													<li style="margin-top: 3px" key={action.text}>{action.text}</li>
+												</template>
+											</ul>
+										</template>
+									</div>
+								</template>
+								<!--Postcall summary-->
+
+								<div class="card-description">
+									<div lwc:if={card.consumer_name} class="caller-name">
+										<b>Caller:</b>&nbsp;{card.consumer_name}
+									</div>
+									<span
+										lwc:if={card.sub_heading}
+										class="card-subheading"
+										data-id={card.card_id}
+										onclick={toggleExpand}
+										>{card.sub_heading}
+										<lightning-icon
+											lwc:if={card.isExpanded}
+											icon-name="utility:chevrondown"
+											alternative-text="chevrondown"
+											size="xx-small"
+											title="chevrondown"
+											class="chevron-color"
+											data-id={card.card_id}
+											onclick={handleIconClick}
+										></lightning-icon>
+										<lightning-icon
+											lwc:else
+											icon-name="utility:chevronup"
+											alternative-text="chevronup"
+											size="xx-small"
+											title="chevronup"
+											class="chevron-color"
+											data-id={card.card_id}
+											onclick={handleIconClick}
+										></lightning-icon>
+									</span>
+
+									<div lwc:if={card.isExpanded} class="card-body">
+										<ul>
+											<template
+												lwc:if={card.list_subheader}
+												for:each={card.list_subheader}
+												for:item="list_sub"
+											>
+												<li style="margin-top: 3px" key={list_sub.text}>
+													{list_sub.text}
+
+													<template lwc:if={list_sub.citation}>
+														<span class="citation" onmouseover={handleCitationPosition}>
+															<lightning-icon
+																icon-name="utility:info"
+																alternative-text="info"
+																size="x-small"
+																title="info"
+															></lightning-icon>
+
+															<div class="tooltip multi-citation-tooltip">
+																<lightning-icon
+																	icon-name="utility:new_window"
+																	size="xx-small"
+																	alternative-text="new_window"
+																	class="popup-open-icon"
+																></lightning-icon>
+
+																<template for:each={list_sub.citation} for:item="c">
+																	<a
+																		href={c.url}
+																		key={c.citation_id}
+																		target="_blank"
+																		class="popup-link"
+																	>
+																		{c.title}
+																	</a>
+																</template>
+															</div>
+														</span>
+													</template>
+												</li>
+											</template>
+										</ul>
+									</div>
+									<div class="card-body">
+										<p class="card-text">
+											{card.body.text}
+											<template lwc:if={card.body.citation}>
+												<span class="citation" onmouseover={handleCitationPosition}>
+													<lightning-icon
+														icon-name="utility:info"
+														alternative-text="info"
+														size="x-small"
+														title="info"
+													></lightning-icon>
+
+													<div class="tooltip multi-citation-tooltip">
+														<lightning-icon
+															icon-name="utility:new_window"
+															size="xx-small"
+															alternative-text="new_window"
+															class="popup-open-icon"
+														></lightning-icon>
+
+														<template for:each={card.body.citation} for:item="c">
+															<a
+																href={c.url}
+																key={c.citation_id}
+																target="_blank"
+																class="popup-link"
+															>
+																{c.title}
+															</a>
+														</template>
+													</div>
+												</span>
+											</template>
+										</p>
+										<ul>
+											<template
+												lwc:if={card.list}
+												for:each={card.list}
+												for:item="list"
+												for:index="index"
+											>
+												<li style="margin-top: 3px" key={list.text}>
+													{list.text}
+
+													<template lwc:if={list.citation}>
+														<span class="citation" onmouseover={handleCitationPosition}>
+															<lightning-icon
+																icon-name="utility:info"
+																alternative-text="info"
+																size="x-small"
+																title="info"
+															></lightning-icon>
+
+															<div class="tooltip multi-citation-tooltip">
+																<lightning-icon
+																	icon-name="utility:new_window"
+																	size="xx-small"
+																	alternative-text="new_window"
+																	class="popup-open-icon"
+																></lightning-icon>
+
+																<template for:each={list.citation} for:item="c">
+																	<a
+																		href={c.url}
+																		key={c.citation_id}
+																		target="_blank"
+																		class="popup-link"
+																	>
+																		{c.title}
+																	</a>
+																</template>
+															</div>
+														</span>
+													</template>
+												</li>
+											</template>
+										</ul>
+									</div>
+								</div>
+
+								<div lwc:if={card.isFooter} class="feedback">
+									<lightning-icon
+										icon-name="utility:reply"
+										size="xx-small"
+										alternative-text="reply"
+										data-id={card.card_id}
+										onclick={handleReply}
+									></lightning-icon>
+									<lightning-icon
+										size="xx-small"
+										icon-name="utility:like"
+										onclick={handleLike}
+										data-id={card.card_id}
+										alternative-text="Like"
+										style={card.isLikeDisabled}
+										class={card.likeClass}
+									></lightning-icon>
+									<lightning-icon
+										size="xx-small"
+										icon-name="utility:dislike"
+										onclick={handleDislike}
+										data-id={card.card_id}
+										alternative-text="DisLike"
+										style={card.isDislikeDisabled}
+										class={card.dislikeClass}
+									></lightning-icon>
+								</div>
+								<template lwc:if={card.feedbackError}>
+									<div class="feedback-error">
+										<lightning-icon
+											icon-name="utility:warning"
+											size="xx-small"
+											alternative-text="Warning"
+											variant="warning"
+										></lightning-icon>
+										{card.feedbackError}
+									</div>
+								</template>
+								<template lwc:if={card.showDislikeReasons}>
+									<div class="chips-container">
+										<template for:each={card.disLikeReasons} for:item="reason">
+											<button
+												key={reason.text}
+												class="custom-chip"
+												data-reason={reason.text}
+												onclick={selectDislikeReason}
+												data-id={card.card_id}
+												disabled={reason.disabled}
+											>
+												{reason.text}
+											</button>
+										</template>
+									</div>
+								</template>
+							</div>
+						</div>
+					</div>
+				</template>
+			</template>
+		</template>
+
+		<div if:true={isJumpInPresentVisible} onclick={handleBottom} class="jump-button">
+			<lightning-icon
+				icon-name="utility:chevrondown"
+				alternative-text="chevrondown"
+				title="chevrondown"
+				size="xx-small"
+			></lightning-icon>
+			<p>Jump to present</p>
+		</div>
+	</div>
+</template>

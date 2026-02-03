@@ -1,0 +1,87 @@
+.slds-card {
+    border: 0;
+    border-top: 1px solid #d8d8d8;
+    border-radius: 0;
+}
+
+.slds-tabs_default__nav {
+    border-bottom: 0;
+}
+
+.slds-tabs_default__nav::after {
+    display: block;
+    content: '';
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #d8d8d8;
+    position: absolute;
+}
+
+.slds-tabs_default__item {
+    margin: 0;
+}
+
+.slds-accordion__list-item {
+    border: 0;
+}
+
+.slds-tabs_default__item::after {
+    height: 2px;
+    z-index: 1;
+}
+
+.slds-tabs_default__item a {
+    color: #000000;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.slds-accordion__summary {
+    padding: 4px 12px;
+}
+
+.slds-accordion__summary-content {
+    font-size: 13px;
+    color: #000000;
+    font-weight: bold;
+}
+
+.slds-tabs_default__content {
+    padding: 10px 0;
+}
+
+.permissioncontainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f2f2f2;
+    height: 150px;
+    width: 100%;
+}
+.permissionaccess {
+    font-weight: bold;
+    text-align: center;
+} 
+.interaction-error {
+    padding: 10px;
+    background: #e53935; 
+    color: #fff;         
+    border-radius: 5px;
+    margin: 5px 10px;
+
+    
+    display: flex;
+    align-items: center;
+}
+
+
+.custom-icon-error {
+    --slds-c-icon-color-foreground-default: #fafafa; 
+    margin-right: 8px; 
+}
+.error-text {
+    flex: 1;
+    word-break: break-word;
+}

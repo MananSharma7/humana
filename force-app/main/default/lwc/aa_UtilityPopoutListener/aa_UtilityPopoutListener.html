@@ -1,0 +1,11 @@
+<template>
+    <div class="slds-box slds-theme_default">
+        <p>Listening for Utility Pop-Out Events...</p>
+        <template if:true={isPoppedOut}>
+            <p class="slds-text-color_success">✅ Utility has been popped out!</p>
+        </template>
+        <template if:false={isPoppedOut}>
+            <p class="slds-text-color_weak">Waiting for pop-out...</p>
+        </template>
+    </div>
+</template>

@@ -1,0 +1,81 @@
+.container {
+	border: 1px solid #cbcbcb;
+	box-shadow: 0px 3px 8.2px 0px #00000026;
+	padding: 2px 4px;
+	background-color: white;
+}
+
+.reply-container {
+	display: flex;
+	align-items: center;
+	width: 95%;
+	margin-left: 10px;
+}
+
+.close-icon {
+	margin-top: 5px;
+	margin-left: 5px;
+	cursor: pointer;
+}
+
+.reply-input-native {
+	width: 95%;
+	box-sizing: border-box;
+	border: none;
+	background: transparent;
+	font-size: 13px;
+	margin: 10px 0 5px 10px;
+	padding: 5px 0 5px 10px;
+	border-left: 3px solid #a8a8a8;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.reply-input-native:focus {
+	outline: none;
+	box-shadow: none;
+	/* keep the left border visible on focus */
+	border-left: 5px solid #a8a8a8;
+}
+
+.send-icon[data-is-active='true'] {
+	cursor: pointer;
+	pointer-events: all;
+}
+
+.send-icon {
+	height: max-content;
+	width: max-content;
+	position: absolute;
+	top: 50%;
+	cursor: not-allowed;
+	transform: translateY(-50%);
+	right: 7px;
+}
+
+.slds-input {
+	border: none;
+	padding-right: 40px;
+}
+
+.slds-input:focus {
+	box-shadow: none;
+}
+
+.custom-textarea {
+	height: auto !important;
+	min-height: 40px;
+	resize: none;
+	overflow-wrap: break-word;
+	white-space: pre-wrap;
+	overflow: hidden;
+}
+
+.AMA-error {
+	padding: 10px;
+	background: #e53935;
+	color: #fff;
+	border-radius: 5px;
+	margin: 5px 0;
+}

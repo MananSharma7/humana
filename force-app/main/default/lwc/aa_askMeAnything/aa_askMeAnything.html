@@ -1,0 +1,57 @@
+<template>
+	<div class="container">
+		<template if:true={replyCard.card_id}>
+			<div class="reply-container">
+				<input
+					type="text"
+					class="reply-input-native"
+					value={replyMessage}
+					oninput={handleReplyInput}
+					aria-label="Reply message"
+				/>
+				<lightning-button-icon
+					icon-name="utility:close"
+					variant="bare"
+					alternative-text="Close"
+					title="Close"
+					onclick={removeReplyCard}
+					class="close-icon"
+				></lightning-button-icon>
+			</div>
+		</template>
+		<div class="slds-form-element slds-is-relative">
+			<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+				<lightning-icon
+					onclick={askQuery}
+					data-is-active={isActive}
+					class="send-icon slds-icon slds-icon-text-default"
+					icon-name="utility:send"
+					alternative-text="send"
+					size="small"
+					title="send"
+				></lightning-icon>
+				<textarea
+					class="slds-input custom-textarea main-input"
+					onkeydown={handleKeyDown}
+					oninput={handleInputChange}
+					placeholder="Ask Me Anything..."
+					maxlength="150"
+				></textarea>
+			</div>
+		</div>
+		<template lwc:if={error}>
+			<div class="AMA-error">
+				<span
+					><lightning-icon
+						icon-name="utility:error"
+						alternative-text="error"
+						size="x-small"
+						title="error"
+						class="custom-icon-error"
+					></lightning-icon>
+				</span>
+				<span style="margin-left: 5px">{errorMessage}</span>
+			</div>
+		</template>
+	</div>
+</template>
