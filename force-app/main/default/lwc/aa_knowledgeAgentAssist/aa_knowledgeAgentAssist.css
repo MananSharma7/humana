@@ -1,26 +1,25 @@
-.container{
-    display: flex;
-    flex-direction: column;
-    gap: 10px; 
-    padding: 10px;
-    height: 100%;
-    background-color: #F2F2F2;
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px;
+	height: 100%;
+	background-color: #f2f2f2;
 }
 
-.container .card-container{
-    height: 100%;
-    overflow-y: scroll;
+.container .card-container {
+	height: 100%;
+	overflow-y: scroll;
 }
-.permissioncontainer{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #F2F2F2;
-    height: 100%;
-    width: 100%;
+.permissioncontainer {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #f2f2f2;
+	height: 100%;
+	width: 100%;
 }
-.permissionaccess{
-    
-     font-weight: bold;
-     text-align: center;
+.permissionaccess {
+	font-weight: bold;
+	text-align: center;
 }

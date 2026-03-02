@@ -74,7 +74,7 @@
 									>
 									</lightning-icon>
 								</template>
-								<h1 class="slds-text-heading_small">{card.header}</h1>
+								<h1 class="slds-text-heading_small"><strong>{card.header}</strong></h1>
 								<div class="card-actions">
 									<template if:true={card.isMinimized}>
 										<lightning-icon
@@ -113,45 +113,59 @@
 										>
 									</div>
 								</template>
-								<!--Postcall summary-->
+
 								<template lwc:if={card.isSummary}>
 									<div class="card-description">
-										<!-- Reason for Call -->
-										<template lwc:if={card.reasonForCall}>
-											<h2 class="slds-text-heading_small">Reason for Call</h2>
-											<p class="card-text" style="margin-top: 3px">{card.reasonForCall}</p>
+										<template lwc:if={card.isSumError}>
+											<p class="slds-text-heading_small" style="margin-top: 3px; color: red">
+												{card.isSumError}
+											</p>
 										</template>
-										<!-- Completed Actions -->
+										<template lwc:if={card.reasonForCall}>
+											<h2 class="slds-text-heading_small"><strong>Reason for Call</strong></h2>
+											<p class="slds-text-heading_small" style="margin-top: 3px">
+												{card.reasonForCall}
+											</p>
+										</template>
+
 										<template lwc:if={card.completedActions}>
 											<h2 class="slds-text-heading_small" style="margin-top: 3px">
-												Completed Actions
+												<strong>Completed Actions</strong>
 											</h2>
 											<ul>
 												<template for:each={card.completedActions} for:item="action">
-													<li style="margin-top: 3px" key={action.text}>{action.text}</li>
+													<li
+														class="slds-text-heading_small"
+														style="margin-top: 3px"
+														key={action.text}
+													>
+														{action.text}
+													</li>
 												</template>
 											</ul>
 										</template>
 
-										<!-- Pending Actions -->
 										<template lwc:if={card.pendingActions}>
 											<h2 class="slds-text-heading_small" style="margin-top: 3px">
-												Pending Actions
+												<strong>Pending Actions</strong>
 											</h2>
 											<ul>
 												<template for:each={card.pendingActions} for:item="action">
-													<li style="margin-top: 3px" key={action.text}>{action.text}</li>
+													<li
+														class="slds-text-heading_small"
+														style="margin-top: 3px"
+														key={action.text}
+													>
+														{action.text}
+													</li>
 												</template>
 											</ul>
 										</template>
 									</div>
 								</template>
-								<!--Postcall summary-->
 
 								<div class="card-description">
-									<div lwc:if={card.consumer_name} class="caller-name">
-										<b>Caller:</b>&nbsp;{card.consumer_name}
-									</div>
+									<div lwc:if={card.consumer_name}>Consumer:&nbsp;{card.consumer_name}</div>
 									<span
 										lwc:if={card.sub_heading}
 										class="card-subheading"

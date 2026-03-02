@@ -1,13 +1,18 @@
 import { LightningElement, track, wire } from 'lwc';
 import hasknowledge from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
+import hasAMAPermission from '@salesforce/customPermission/AA_AskMeAnything';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 
 export default class Aa_knowledgeAgentAssist extends LightningElement {
 	showknowledge = hasknowledge;
+	showAMA = hasAMAPermission;
+	showAgentAssist = true;
 	@track replyCard = {};
 	isJumpInPresentVisible = false;
 	@track isLoading = false;
 	isFeatureEnabled = false;
+	isKnowledgeCardEnabled = false;
+	isAMAEnabled = false;
 
 	handleReplyCard(event) {
 		this.replyCard = event.detail;
@@ -42,16 +47,29 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 		this.replyCard = {};
 	}
 
-	@wire(isFeatureEnabled, { featureName: 'MP_Interaction_360' })
-	wiredFeatureEnabled({ error, data }) {
+	@wire(isFeatureEnabled, { featureName: 'MP_AskMeAnything' })
+	wiredAMAEnabled({ error, data }) {
 		if (data) {
-			this.isFeatureEnabled = data;
+			this.isAMAEnabled = data;
 		} else if (error) {
 			console.error(error);
 		}
 	}
 
-	get showAgentAssist() {
-		return this.isFeatureEnabled && this.showknowledge;
+	@wire(isFeatureEnabled, { featureName: 'MP_Knowledge_Cards' })
+	wiredKCEnabled({ error, data }) {
+		if (data) {
+			this.isKnowledgeCardEnabled = data;
+		} else if (error) {
+			console.error(error);
+		}
+	}
+
+	get isKnowledgeCards() {
+		return this.isKnowledgeCardEnabled && this.showknowledge;
+	}
+
+	get isShowAMA() {
+		return this.isAMAEnabled && this.showAMA;
 	}
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Controls visibility of the Agent Assist Knowledge Message component</description>
+    <label>MarketPoint Agent Assist Knowledge Message Custom</label>
+</CustomPermission>

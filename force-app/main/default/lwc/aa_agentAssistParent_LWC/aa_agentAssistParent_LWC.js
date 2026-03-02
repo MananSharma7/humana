@@ -17,6 +17,7 @@ import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMesse
 import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getRecordDetails';
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
 import PROXY_CHANNEL from '@salesforce/messageChannel/AgentAssistLWCMessengerMs__c';
+import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
@@ -132,7 +133,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		if (Array.isArray(this.accessToken)) {
 			this.accessToken = this.accessToken[0];
 		}
-		console.log(JSON.stringify(this.accessToken, null, 2));
+		console.log('connectedCallback after setupWebSocketIoClient Access Token:received');
+
 		this.subscribeToAgentAssistMessageChannel();
 		this.subscribeToConsumerSearchMessageChannel();
 		this.websocket.setupWebSocketIoClient(this.accessToken);
@@ -331,6 +333,18 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					console.log('agentAssistUtility Panel | handleAgentAssistMessage | acknowledgement');
 					this.sendAcknowledgement(message.data.interactingId);
 					break;
+				case AgentAssistLabels.Set_Interaction_Context_Notification:
+					console.log(
+						'agentAssistUtility Panel | handleAgentAssistMessage | Set_Interaction_Context_Notification'
+					);
+					this.handleSetInteractionContextNotification(message);
+					break;
+				case AgentAssistLabels.Set_Customer_Context_Notification:
+					console.log(
+						'agentAssistUtility Panel | handleAgentAssistMessage | Set_Customer_Context_Notification'
+					);
+					this.handleSetCustomerContextNotification(message);
+					break;
 				default:
 			}
 		}
@@ -386,6 +400,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.userSalesforceId
 				)
 			);
+			LWCLogger({
+				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
+				source: 'sendInteractionContext | Send Interaction Context',
+				level: 'info'
+			});
 		} catch (e) {
 			console.log('agentAssistUtilityPanel | sendInteractionContext | error: ' + e);
 			this.showError('Agent Assist has been disabled while we investigate an error: ' + e.message);
@@ -419,8 +438,26 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 							)
 						);
 						console.log('Customer context sent');
+						LWCLogger({
+							messageText:
+								'Customer context sent; Interaction ID: ' +
+								this.genesysInteractionId +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId'),
+							source: 'sendCustomerContext | Send Customer Context',
+							level: 'info'
+						});
 					} else {
 						console.log('Cust id or Sdr member id is null');
+						LWCLogger({
+							messageText:
+								'Customer context not set, Customer ID or SDR Member ID was null; Interaction ID: ' +
+								this.genesysInteractionId +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId'),
+							source: 'sendCustomerContext | Send Customer Context',
+							level: 'error'
+						});
 					}
 					console.log(
 						'setCustomerContextData:' +
@@ -573,6 +610,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				enterprise_person_id
 			)
 		);
+		LWCLogger({
+			messageText:
+				'AMA Request sent; Interaction ID: ' +
+				this.genesysInteractionId +
+				'; Agent Assist Session ID: ' +
+				localStorage.getItem('agentAssistVoiceCallId') +
+				'; AMA Question: ' +
+				data?.data?.content?.query?.text,
+			source: 'sendAMAQuery | Ask Me Anything',
+			level: 'info'
+		});
 	}
 	handleExpand() {
 		setTimeout(() => {
@@ -606,6 +654,34 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				AgentAssistLabels.Any_acknowledgement,
 				AgentAssistEvents.any_acknowledgement(this.genesysInteractionId)
 			);
+		}
+	}
+
+	handleSetInteractionContextNotification(message) {
+		let intContNotError = '';
+		console.log('Inside handleSetInteractionContextNotification');
+		if (message?.data?.error_status == true) {
+			console.log('Error status ' + message?.data?.error_status + ' code : ' + message?.data?.code);
+			console.log('message ', message?.data?.user_message);
+			intContNotError = message?.data?.user_message;
+			this.showError(intContNotError);
+		} else {
+			console.log('Event  Type : ' + message?.data?.event_type);
+			console.log('Message : ' + message?.data?.message);
+		}
+	}
+
+	handleSetCustomerContextNotification(message) {
+		let custContNotError = '';
+		console.log('Inside handleSetCustomerContextNotification');
+		if (message?.data?.error_status == true) {
+			console.log('Error status ' + message?.data?.error_status + ' code : ' + message?.data?.code);
+			console.log('message ', message?.data?.user_message);
+			custContNotError = message?.data?.user_message;
+			this.showError(custContNotError);
+		} else {
+			console.log('Event  Type : ' + message?.data?.event_type);
+			console.log('Message : ' + message?.data?.message);
 		}
 	}
 }

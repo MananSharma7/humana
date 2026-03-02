@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+	<customPermissions>
+		<enabled>true</enabled>
+		<name>MarketPoint_Agent_Assist_Knowledge_Message_Custom</name>
+	</customPermissions>
+	<description>Grants access to the Agent Assist Knowledge Message component</description>
+	<hasActivationRequired>false</hasActivationRequired>
+	<label>Agent Assist Knowledge Message Access</label>
+</PermissionSet>

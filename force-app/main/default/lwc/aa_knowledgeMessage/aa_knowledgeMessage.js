@@ -5,7 +5,10 @@ import Toast from 'lightning/toast';
 import { AgentAssistLabels, AgentAssistEvents } from 'c/aa_UtilsHum';
 import hasAgentAssistPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Custom';
 import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
-import isFeatureEnabled from '@salesforce/apex/Utility.isFeatureEnabled';
+import hasAMAPermission from '@salesforce/customPermission/AA_AskMeAnything';
+import hasPostCallSummaryPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Post_Call_Summary';
+import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
+import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 
 export default class Aa_knowledgeMessage extends LightningElement {
 	@track _isJumpInPresentVisible = false;
@@ -23,11 +26,14 @@ export default class Aa_knowledgeMessage extends LightningElement {
 	lastMessageContext = null;
 	showComponent = hasAgentAssistPermission;
 	knowledgeCardPermission = hasKnowledgeCardPermission;
+	amaPermission = hasAMAPermission;
+	isPostCallSummaryPermission = hasPostCallSummaryPermission;
+	isPostCallSummaryEnabled = false;
+
 	interactionId = null;
 	_recordId;
 	@api recordId;
 	pollingInterval = null;
-	isPostCallSummaryEnabled = false;
 
 	@wire(MessageContext)
 	messageContext;
@@ -46,15 +52,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		this.updateJumpToPresent();
 		this.subscribeToMessageChannel();
 		this.handleStateLoad();
-	}
-
-	@wire(isFeatureEnabled, { featureName: 'MP_Post_Call_Summary' })
-	wiredFeatureEnabled({ error, data }) {
-		if (data) {
-			this.isPostCallSummaryEnabled = data;
-		} else if (error) {
-			console.error(error);
-		}
 	}
 
 	handleStateLoad() {
@@ -82,6 +79,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						isMinimized: isMinimized,
 						contentClass: isMinimized ? 'card-content-collapsible minimized' : 'card-content-collapsible'
 					};
+				});
+
+				// Filter based on permissions
+				this.cards = this.cards.filter((card) => {
+					if (card.card_AMA && !this.amaPermission) return false;
+					if (!card.card_AMA && !this.knowledgeCardPermission) return false;
+					return true;
 				});
 				console.log('handleStateLoad: Restored ' + this.cards.length + ' cards.');
 				this.updateJumpToPresent();
@@ -113,8 +117,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			unsubscribe(this.mockSubscription);
 			this.mockSubscription = null;
 		}
-		//localStorage.removeItem('aa_knowledge_cards_cache');
-		//localStorage.removeItem('aa_knowledge_interaction_id');
 	}
 
 	subscribeToMessageChannel() {
@@ -131,8 +133,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					VOICE_CALL_CHANNEL,
 					(message) => {
 						console.log('Message => ' + JSON.stringify(message, null, 2));
-						//console.log('this.cards:' + this.cards);
-						// clearTimeout(this.messageTimeout);
 						this.handleAgentAssistMessage(message);
 					},
 					{ scope: APPLICATION_SCOPE }
@@ -152,6 +152,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 	prepareAskMeAnything(message) {
 		try {
+			if (!this.amaPermission) {
+				console.log('prepareAskMeAnything: No AMA permission, skipping.');
+				return;
+			}
 			console.log(' => In handleAgentAssistMessage try');
 			this.amaErrorMessage = null;
 
@@ -177,9 +181,35 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				case 'completed':
 					isCompleted = true;
 					isFooter = true;
+					LWCLogger({
+						messageText:
+							'Ask Me Anything Card Completed; Interaction ID: ' +
+							localStorage.getItem('agentAssistGenesysInteractionId') +
+							'; Agent Assist Session ID: ' +
+							localStorage.getItem('agentAssistVoiceCallId') +
+							'; Card Title: ' +
+							content?.header +
+							'; Card ID: ' +
+							cardMetadata?.card_id,
+						source: 'prepareAskMeAnything | AMA',
+						level: 'info'
+					});
 					break;
 				case 'abandoned':
 					isAbandoned = true;
+					LWCLogger({
+						messageText:
+							'Ask Me Anything Card Abandoned; Interaction ID: ' +
+							localStorage.getItem('agentAssistGenesysInteractionId') +
+							'; Agent Assist Session ID: ' +
+							localStorage.getItem('agentAssistVoiceCallId') +
+							'; Card Title: ' +
+							content?.header +
+							'; Card ID: ' +
+							cardMetadata?.card_id,
+						source: 'prepareAskMeAnything | AMA',
+						level: 'info'
+					});
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -301,6 +331,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 	prepareKnowledgeCard(message) {
 		try {
+			if (!this.knowledgeCardPermission) {
+				console.log('prepareKnowledgeCard: No Knowledge permission, skipping.');
+				return;
+			}
 			console.log(' => In handleAgentAssistMessage try');
 			this.amaErrorMessage = null;
 
@@ -325,9 +359,35 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				case 'completed':
 					isCompleted = true;
 					isFooter = true;
+					LWCLogger({
+						messageText:
+							'Knowledge Card Completed; Interaction ID: ' +
+							localStorage.getItem('agentAssistGenesysInteractionId') +
+							'; Agent Assist Session ID: ' +
+							localStorage.getItem('agentAssistVoiceCallId') +
+							'; Card Title: ' +
+							content?.header +
+							'; Card ID: ' +
+							cardMetadata?.card_id,
+						source: 'prepareKnowledgeCard | Knowledge Cards',
+						level: 'info'
+					});
 					break;
 				case 'abandoned':
 					isAbandoned = true;
+					LWCLogger({
+						messageText:
+							'Knowledge Card Abandoned; Interaction ID: ' +
+							localStorage.getItem('agentAssistGenesysInteractionId') +
+							'; Agent Assist Session ID: ' +
+							localStorage.getItem('agentAssistVoiceCallId') +
+							'; Card Title: ' +
+							content?.header +
+							'; Card ID: ' +
+							cardMetadata?.card_id,
+						source: 'prepareKnowledgeCard | Knowledge Cards',
+						level: 'info'
+					});
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -340,7 +400,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				card_AMA: false,
-				consumer_name: content?.caller_name || '',
 				reply: '',
 				header: content?.header || '',
 				sub_heading: content?.body?.[0]?.sub_heading?.text || '',
@@ -382,16 +441,16 @@ export default class Aa_knowledgeMessage extends LightningElement {
 	}
 	preparePostCallSummary(message) {
 		try {
-			console.log(' => In Post call Summary ');
-			this.amaErrorMessage = null;
+			let isSumError = '';
+			if (message?.data?.error?.error_status == true) {
+				isSumError = message?.data?.error?.user_message;
+			}
 
 			if (message.type === AgentAssistLabels.POST_CALL_SUMMARY) {
 				this.lastMessageContext = 'Summary';
 			}
-			this.amaErrorMessage = null;
-			console.log(' => In Post call summary');
 			const messageData = message?.data?.data || '';
-			const summaryTitle = messageData?.summary_title || '';
+			const summaryTitle = messageData?.summary_title || 'Post Call Summary Error';
 
 			const actions = messageData?.actions_taken || '';
 			const outcome = messageData?.outcome || '';
@@ -399,7 +458,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			let isLoading = false;
 			let isAbandoned = false;
 			let isCompleted = false;
-			let isFooter = true;
+			let isFooter = false;
 			let isSummary = false;
 
 			const card = {
@@ -409,6 +468,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				isSummary: true,
+				isSumError,
 				card_AMA: false,
 				reply: '',
 				header: 'Summary: ' + summaryTitle || '',
@@ -430,7 +490,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			}
 
 			const existingIndex = this.cards.findIndex((c) => c.card_id === card.card_id);
-			console.log('existingIndex =>' + existingIndex);
 
 			if (existingIndex !== -1) {
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
@@ -438,13 +497,23 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				this.cards = [...this.cards, card];
 			}
 			this.saveState();
-			console.log('Cards => ' + JSON.stringify(this.cards, null, 2));
 			this.errorMessage = null;
 			this.SummaryErrorMessage = null;
 			this.updateJumpToPresent();
+			LWCLogger({
+				messageText:
+					'Post Call Summary Completed; Interaction ID: ' +
+					localStorage.getItem('agentAssistGenesysInteractionId') +
+					'; Agent Assist Session ID: ' +
+					localStorage.getItem('agentAssistVoiceCallId') +
+					'; Card ID: ' +
+					card?.card_id +
+					'; Summary Title: ' +
+					summaryTitle,
+				source: 'prepareKnowledgeCard | Post Call Summary',
+				level: 'info'
+			});
 		} catch (error) {
-			console.log('Error => ' + error);
-			console.log('Error => ' + error.stack);
 			this.showError('We are unable to retrieve Summary at this time');
 		}
 	}
@@ -489,9 +558,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					this.showError(null);
 					this.prepareKnowledgeCard(message);
 					break;
+				//check is there is summary available
 				case AgentAssistLabels.POST_CALL_SUMMARY:
 					this.showError(null);
-					if (this.isPostCallSummaryEnabled) {
+					if (this.isPostCallSummaryEnabled && this.isPostCallSummaryPermission) {
 						this.preparePostCallSummary(message);
 					}
 					break;
@@ -654,47 +724,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			}
 		}, 120);
 	}
-	/*
-    selectDislikeReason(event) {
-        const cardId = event.target.dataset.id;
-        this.cards = this.cards.map((card) => {
-            if (card.card_id !== cardId) return card;
-
-            if (card.isDisLiked) {
-                Toast.show(
-                    {
-                        label: 'Thank you for your feedback!',
-                        mode: 'dismissible',
-                        variant: 'success'
-                    },
-                    this
-                );
-            }
-
-            card.disLikeReason = event.target.textContent;
-
-            card.disLikeReasons.forEach((dislikeReason) => {
-                if (dislikeReason.text === event.target.textContent) {
-                    dislikeReason.isSelected = true;
-                } else {
-                    dislikeReason.isSelected = false;
-                }
-            });
-
-            let data = AgentAssistEvents.agent_feedback(
-                feedback,
-                card.disLikeReasons,
-                card.card_id,
-                this.interactionId
-            );
-            publish(
-                this.messageContext,
-                AGENTASSISTLMS,
-                AgentAssistEvents.aa_lms_event(AgentAssistLabels.AGENT_FEEDBACK, data)
-            );
-            return card;
-        });
-    }*/
 
 	toggleExpand(event) {
 		const cardId = event.target.dataset.id;
@@ -880,6 +909,15 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				}
 				return card;
 			});
+		}
+	}
+
+	@wire(isFeatureEnabled, { featureName: 'MP_Post_Call_Summary' })
+	wiredFeatureEnabled({ error, data }) {
+		if (data) {
+			this.isPostCallSummaryEnabled = data;
+		} else if (error) {
+			console.error(error);
 		}
 	}
 }

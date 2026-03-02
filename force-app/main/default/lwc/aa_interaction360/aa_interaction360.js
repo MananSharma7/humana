@@ -4,6 +4,8 @@ import hasIntercation from '@salesforce/customPermission/MarketPoint_Agent_Assis
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 import { AgentAssistLabels } from 'c/aa_UtilsHum';
+import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
+import isSettingsEnabled from '@salesforce/apex/AA_Utility.isSettingsEnabled';
 
 export default class Aa_interaction360 extends LightningElement {
 	@api recordId;
@@ -16,6 +18,8 @@ export default class Aa_interaction360 extends LightningElement {
 	@track errorMessage = null;
 	@track statusMessage = '';
 	customerInteractionId;
+	isI360Enabled = false;
+	isI360SettingsEnabled = false;
 
 	@wire(MessageContext)
 	messageContext;
@@ -28,7 +32,6 @@ export default class Aa_interaction360 extends LightningElement {
 
 	handleStateLoad() {
 		try {
-			// Check if page was reloaded (hard refresh)
 			// Check if page was reloaded (hard refresh)
 			const navEntries = performance.getEntriesByType('navigation');
 			const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
@@ -283,13 +286,6 @@ export default class Aa_interaction360 extends LightningElement {
 
 		localStorage.removeItem('aa_interaction_history_cache');
 		localStorage.removeItem('aa_interaction_customer_id');
-
-		if (this.agentAssistLMSSubscription) {
-			unsubscribe(this.agentAssistLMSSubscription);
-			this.agentAssistLMSSubscription = null;
-			console.log('Interaction360 clearInteraction: Unsubscribed from LMS to prevent ghost updates.');
-		}
-
 		this.saveState();
 		this.updateStatusMessage(false, true);
 	}
@@ -332,20 +328,27 @@ export default class Aa_interaction360 extends LightningElement {
 		this.isExpanded = !this.isExpanded;
 
 		if (this.isExpanded) {
-			event.target.iconName = 'utility:minimize_window';
-			event.target.alternativeText = 'minimize_window';
-			event.target.ariaExpanded = 'true';
-			event.target.title = 'minimize_window';
-			event.target.style.translate = '50% -70%';
 			// Dispatch a custom event to notify the parent to scroll interaction360
 			this.dispatchEvent(new CustomEvent('expand', { bubbles: true, composed: true }));
-		} else {
-			event.target.iconName = 'utility:expand_alt';
-			event.target.alternativeText = 'expand_alt';
-			event.target.ariaExpanded = 'false';
-			event.target.title = 'expand_alt';
-			event.target.style.translate = '50% -50%';
 		}
+	}
+
+	get expandIconName() {
+		return this.isExpanded ? 'utility:minimize_window' : 'utility:expand_alt';
+	}
+
+	get expandIconTitle() {
+		return this.isExpanded ? 'minimize_window' : 'expand_alt';
+	}
+
+	get expandIconStyle() {
+		return this.isExpanded
+			? 'top: 50%; right: 5%; translate: 50% -70%; cursor: pointer'
+			: 'top: 50%; right: 5%; translate: 50% -50%; cursor: pointer';
+	}
+
+	get expandIconAria() {
+		return this.isExpanded ? 'true' : 'false';
 	}
 
 	toggleSummaryExpanded(event) {
@@ -354,5 +357,28 @@ export default class Aa_interaction360 extends LightningElement {
 		if (isNaN(number)) return;
 
 		this.callHistories[number].isExpanded = !this.callHistories[number].isExpanded;
+	}
+
+	@wire(isFeatureEnabled, { featureName: 'MP_Interaction_360' })
+	wiredFeatureEnabled({ error, data }) {
+		if (data) {
+			this.isI360Enabled = data;
+		} else if (error) {
+			console.error(error);
+		}
+	}
+
+	@wire(isSettingsEnabled)
+	wiredSettingsEnabled({ error, data }) {
+		if (data) {
+			this.isI360SettingsEnabled = data;
+		} else if (error) {
+			console.error(error);
+		}
+	}
+
+	get showI360() {
+		//return this.isI360SettingsEnabled && this.showInteraction;
+		return this.isI360Enabled && this.showInteraction;
 	}
 }

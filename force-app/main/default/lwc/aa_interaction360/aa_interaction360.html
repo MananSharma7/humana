@@ -1,156 +1,142 @@
 <template>
-    <template if:true={showInteraction}>
-        <div class="slds-card">
-            <div class="slds-tabs_default">
-                <ul class="slds-tabs_default__nav slds-is-relative" role="tablist">
-                    <li class={tabClass} title="Item One" role="presentation">
-                        <a
-                            class="slds-tabs_default__link"
-                            href="#"
-                            role="tab"
-                            aria-selected="true"
-                            aria-controls="tab-default-1"
-                            id="tab-default-1__item"
-                        >
-                            {callHistoryLabel}
-                        </a>
-                    </li>
+	<template if:true={showI360}>
+		<div class="slds-card">
+			<div class="slds-tabs_default">
+				<ul class="slds-tabs_default__nav slds-is-relative" role="tablist">
+					<li class={tabClass} title="Item One" role="presentation">
+						<a
+							class="slds-tabs_default__link"
+							href="#"
+							role="tab"
+							aria-selected="true"
+							aria-controls="tab-default-1"
+							id="tab-default-1__item"
+						>
+							{callHistoryLabel}
+						</a>
+					</li>
 
-                    <lightning-icon
-                        class="slds-is-absolute"
-                        icon-name="utility:expand_alt"
-                        alternative-text="expand_alt"
-                        style="top: 50%; right: 5%; translate: 50% -50%; cursor: pointer"
-                        size="x-small"
-                        lwc:ref="expandIcon"
-                        aria-expanded="false"
-                        onclick={toggleExpanded}
-                        onkeypress={toggleExpanded}
-                        tabindex="0"
-                        title="expand_alt"
-                    ></lightning-icon>
-                </ul>
-                <div
-                    lwc:if={isExpanded}
-                    class="slds-tabs_default__content slds-show"
-                    role="tabpanel"
-                    aria-labelledby="tab-default-1__item"
-                >
-                    <ul class="slds-accordion" style="max-height: 400px; overflow-y: auto">
-                        <template lwc:if={error}>
-                            <div class="interaction-error">
-                                <lightning-icon
-                                    icon-name="utility:error"
-                                    alternative-text="error"
-                                    size="x-small"
-                                    title="error"
-                                    class="custom-icon-error"
-                                ></lightning-icon>
-                                <span class="error-text">{errorMessage}</span>
-                            </div>
-                        </template>
-                        <template lwc:else>
-                            <template
-                                lwc:if={hasHistory}
-                                for:each={callHistories}
-                                for:item="callHistory"
-                            >
-                                <li key={callHistory.id} class="slds-accordion__list-item">
-                                    <section class="slds-accordion__section">
-                                        <div class="slds-accordion__summary">
-                                            <h3
-                                                class="slds-accordion__summary-heading"
-                                                style="
-                                                    font-weight: 500;
-                                                    cursor: pointer;
-                                                    font-size: 15px;
-                                                "
-                                                data-id={callHistory.id}
-                                                tabindex="0"
-                                                onkeypress={toggleSummaryExpanded}
-                                                onclick={toggleSummaryExpanded}
-                                            >
-                                                <div style="display: flex; gap: 5px; width: 100%">
-                                                    <span
-                                                        class="slds-accordion__summary-content"
-                                                        title={callHistory.title}
-                                                    >
-                                                        {callHistory.date} - {callHistory.title}
-                                                    </span>
-                                                    <lightning-icon
-                                                        lwc:if={callHistory.isExpanded}
-                                                        icon-name="utility:chevronup"
-                                                        alternative-text="chevronup"
-                                                        size="xx-small"
-                                                        style="color: #181818"
-                                                        title="chevronup"
-                                                    ></lightning-icon>
-                                                    <lightning-icon
-                                                        lwc:else
-                                                        icon-name="utility:chevrondown"
-                                                        alternative-text="chevrondown"
-                                                        size="xx-small"
-                                                        style="color: #181818"
-                                                        title="chevrondown"
-                                                    ></lightning-icon>
-                                                </div>
-                                            </h3>
-                                        </div>
-                                        <div
-                                            lwc:if={callHistory.isExpanded}
-                                            style="
-                                                margin: 6px;
-                                                color: #818181;
-                                                font-size: 13px;
-                                                line-height: 120%;
-                                                margin-top: 12px;
-                                                padding-left: 10px;
-                                                border-left: 1px solid rgb(129, 129, 129);
-                                            "
-                                        >
-                                            <p>{callHistory.summary}</p>
-                                            <template
-                                                for:each={callHistory.details}
-                                                for:item="detail"
-                                            >
-                                                <p style="font-weight: 500" key={detail.title}>
-                                                    {detail.title}
-                                                </p>
-                                                <ul key={detail.title} style="padding-left: 20px">
-                                                    <template
-                                                        if:true={detail.hasData}
-                                                        for:each={detail.list}
-                                                        for:item="list"
-                                                    >
-                                                        <li style="list-style: disc" key={list}>
-                                                            {list}
-                                                        </li>
-                                                    </template>
-                                                    <template if:false={detail.hasData}>
-                                                        <li>No data available</li>
-                                                    </template>
-                                                </ul>
-                                            </template>
-                                        </div>
-                                    </section>
-                                </li>
-                            </template>
-                             <template if:true={statusMessage} >
-                                <li>&nbsp;&nbsp;{statusMessage}</li> 
-                             </template>
-                        </template>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </template>
-    <template if:false={showInteraction}>
-        <!-- Display access denied message -->
-        <div class="permissioncontainer">
-            <p class="permissionaccess">
-                You do not have permission to view Interaction360 Card in Agent Assist,<br />
-                please contact your Admin.
-            </p>
-        </div>
-    </template>
+					<lightning-icon
+						class="slds-is-absolute"
+						icon-name={expandIconName}
+						alternative-text={expandIconTitle}
+						style={expandIconStyle}
+						size="x-small"
+						lwc:ref="expandIcon"
+						aria-expanded={expandIconAria}
+						onclick={toggleExpanded}
+						onkeypress={toggleExpanded}
+						tabindex="0"
+						title={expandIconTitle}
+					></lightning-icon>
+				</ul>
+				<div
+					lwc:if={isExpanded}
+					class="slds-tabs_default__content slds-show"
+					role="tabpanel"
+					aria-labelledby="tab-default-1__item"
+				>
+					<ul class="slds-accordion" style="max-height: 400px; overflow-y: auto">
+						<template lwc:if={error}>
+							<div class="interaction-error">
+								<lightning-icon
+									icon-name="utility:error"
+									alternative-text="error"
+									size="x-small"
+									title="error"
+									class="custom-icon-error"
+								></lightning-icon>
+								<span class="error-text">{errorMessage}</span>
+							</div>
+						</template>
+						<template lwc:else>
+							<template lwc:if={hasHistory} for:each={callHistories} for:item="callHistory">
+								<li key={callHistory.id} class="slds-accordion__list-item">
+									<section class="slds-accordion__section">
+										<div class="slds-accordion__summary">
+											<h3
+												class="slds-accordion__summary-heading"
+												style="font-weight: 500; cursor: pointer; font-size: 15px"
+												data-id={callHistory.id}
+												tabindex="0"
+												onkeypress={toggleSummaryExpanded}
+												onclick={toggleSummaryExpanded}
+											>
+												<div style="display: flex; gap: 5px; width: 100%">
+													<span
+														class="slds-accordion__summary-content"
+														title={callHistory.title}
+													>
+														{callHistory.date} - {callHistory.title}
+													</span>
+													<lightning-icon
+														lwc:if={callHistory.isExpanded}
+														icon-name="utility:chevronup"
+														alternative-text="chevronup"
+														size="xx-small"
+														style="color: #181818"
+														title="chevronup"
+													>
+													</lightning-icon>
+													<lightning-icon
+														lwc:else
+														icon-name="utility:chevrondown"
+														alternative-text="chevrondown"
+														size="xx-small"
+														style="color: #181818"
+														title="chevrondown"
+													></lightning-icon>
+												</div>
+											</h3>
+										</div>
+										<div
+											lwc:if={callHistory.isExpanded}
+											style="
+												margin: 6px;
+												color: #818181;
+												font-size: 13px;
+												line-height: 120%;
+												margin-top: 12px;
+												padding-left: 10px;
+												border-left: 1px solid rgb(129, 129, 129);
+											"
+										>
+											<p>{callHistory.summary}</p>
+											<template for:each={callHistory.details} for:item="detail">
+												<p style="font-weight: 500" key={detail.title}>{detail.title}</p>
+												<ul key={detail.title} style="padding-left: 20px">
+													<template
+														if:true={detail.hasData}
+														for:each={detail.list}
+														for:item="list"
+													>
+														<li style="list-style: disc" key={list}>{list}</li>
+													</template>
+													<template if:false={detail.hasData}>
+														<li>No data available</li>
+													</template>
+												</ul>
+											</template>
+										</div>
+									</section>
+								</li>
+							</template>
+							<template if:true={statusMessage}>
+								<li>&nbsp;&nbsp;{statusMessage}</li>
+							</template>
+						</template>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</template>
+	<template if:false={showInteraction}>
+		<!-- Display access denied message -->
+		<div class="permissioncontainer">
+			<p class="permissionaccess">
+				You do not have permission to view Interaction360 Card in Agent Assist,<br />
+				please contact your Admin.
+			</p>
+		</div>
+	</template>
 </template>
