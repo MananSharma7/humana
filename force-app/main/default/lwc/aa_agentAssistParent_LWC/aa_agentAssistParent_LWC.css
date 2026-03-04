@@ -3,11 +3,62 @@
 	height: 100%;
 }
 
+.outer-container {
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+	max-height: 100vh;
+	overflow: hidden;
+	position: relative;
+}
+
 .container {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	max-height: 100vh;
+}
+
+.main-panels {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+/*  Vertical tab button – always visible on the left edge */
+.transcript-tab-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	min-width: 24px;
+	height: 100%;
+	background: #0b5cab;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	position: relative;
+	transition: background 0.15s;
+	flex-shrink: 0;
+}
+
+.transcript-tab-btn:hover {
+	background: #0a4e9b;
+}
+
+.tab-label {
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+	transform: rotate(180deg);
+	font-size: 11px;
+	font-weight: 600;
+	color: #ffffff;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	user-select: none;
 }
 
 .permissioncontainer {

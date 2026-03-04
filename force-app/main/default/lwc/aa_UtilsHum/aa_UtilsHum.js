@@ -39,6 +39,7 @@ export default class AgentAssistWebsocket {
 					this.websocket = io(websocketConfig.endpoint, {
 						path: websocketConfig.path,
 						transports: ['websocket'],
+
 						reconnection: websocketConfig.properties.reconnection,
 						reconnectionAttempts: websocketConfig.properties.reconnectionAttempts,
 						reconnectionDelay: websocketConfig.properties.reconnectionDelay,
@@ -76,33 +77,95 @@ export default class AgentAssistWebsocket {
 						});
 					});
 
+					// Catch ANY incoming event (custom or built-in that is dispatched)
+					this.websocket.onAny((event, ...args) => {
+						console.log("'agentAssistUtils | createWebSocketIoClient | socket[onAny]", event, ...args);
+						LWCLogger({ messageText: 'onAny: ' + event, source: 'createWebSocketIoClient', level: 'info' });
+					});
+
 					if (this.interaction360Permission && websocketConfig.featureFlag.i360) {
-						this.websocket.on(AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY, (data) => {
-							console.log(
-								'agentAssistUtils | createWebSocketIoClient | Received historical_interaction_summary'
-							);
-							let message = AgentAssistEvents.aa_lms_event(
-								AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY,
-								data
-							);
-							console.log(
-								'agentAssistUtils | createWebSocketIoClient | historical_interaction_summary: ' +
-									JSON.stringify(data)
-							);
-							publish(messageContext, VOICE_CALL_CHANNEL, message);
+						this.websocket.on(AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY, (data, ack) => {
+							try {
+								console.log(
+									'agentAssistUtils | createWebSocketIoClient | Received historical_interaction_summary'
+								);
+								let message = AgentAssistEvents.aa_lms_event(
+									AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY,
+									data
+								);
+								console.log(
+									'agentAssistUtils | createWebSocketIoClient | historical_interaction_summary: ' +
+										JSON.stringify(data)
+								);
+								publish(messageContext, VOICE_CALL_CHANNEL, message);
+								// ✅ Send ACK back to server (include whatever the server expects)
+								if (typeof ack === 'function') {
+									ack(true); // if server expects a boolean
+								}
+
+								LWCLogger({
+									messageText:
+										'I360 returned; Interaction ID: ' +
+										localStorage.getItem('agentAssistGenesysInteractionId') +
+										'; Agent Assist Session ID: ' +
+										localStorage.getItem('agentAssistVoiceCallId'),
+									source: 'setupWebsocketIoClient | Interaction360',
+									level: 'info'
+								});
+							} catch (err) {
+								console.error(
+									'agentAssistUtils | createWebSocketIoClient | historical_interaction_summary error:',
+									err
+								);
+								LWCLogger({
+									messageText: 'On historical_interaction_summary error',
+									source: 'createWebSocketIoClient',
+									level: 'error'
+								});
+							}
 						});
 					}
 
 					if (this.knowledgeCardPermission && websocketConfig.featureFlag.knowledge) {
-						this.websocket.on(AgentAssistLabels.KNOWLEDGE_CARD, (data) => {
-							console.log('agentAssistUtils | createWebSocketIoClient | Received knowledge_card');
-							console.log(
-								'agentAssistUtils | createWebSocketIoClient | knowledge_card data',
-								JSON.stringify(data)
-							);
-							let message = AgentAssistEvents.aa_lms_event(AgentAssistLabels.KNOWLEDGE_CARD, data);
-							const messageContext = createMessageContext();
-							publish(messageContext, VOICE_CALL_CHANNEL, message);
+						this.websocket.on(AgentAssistLabels.KNOWLEDGE_CARD, (data, ack) => {
+							try {
+								console.log('agentAssistUtils | createWebSocketIoClient | Received knowledge_card');
+								console.log(
+									'agentAssistUtils | createWebSocketIoClient | knowledge_card data',
+									JSON.stringify(data)
+								);
+
+								// Build and publish your LMS message first (or after ack—up to your contract)
+								const message = AgentAssistEvents.aa_lms_event(AgentAssistLabels.KNOWLEDGE_CARD, data);
+								const messageContext = createMessageContext();
+								const interactionId = data?.data?.card_metadata?.interaction_id;
+								LWCLogger({
+									messageText:
+										'Knowledge Card Surfaced; Interaction ID: ' +
+										localStorage.getItem('agentAssistGenesysInteractionId') +
+										'; Agent Assist Session ID: ' +
+										localStorage.getItem('agentAssistVoiceCallId') +
+										'; Card Title: ' +
+										data?.data?.content?.header +
+										'; Card ID: ' +
+										data?.data?.card_metadata?.card_id,
+									source: 'setupWebSocketIoClient | Knowledge Cards',
+									level: 'info'
+								});
+								publish(messageContext, VOICE_CALL_CHANNEL, message);
+
+								// ✅ Send ACK back to server (include whatever the server expects)
+								if (typeof ack === 'function') {
+									ack(true); // if server expects a boolean
+								}
+							} catch (err) {
+								console.error('knowledge_card handler error', err);
+								LWCLogger({
+									messageText: 'On knowledge_card error',
+									source: 'createWebSocketIoClient',
+									level: 'error'
+								});
+							}
 						});
 					}
 
@@ -139,20 +202,45 @@ export default class AgentAssistWebsocket {
 					});
 
 					if (websocketConfig.featureFlag.ama) {
-						this.websocket.on(AgentAssistLabels.ASK_ME_ANYTHING_RESPONSE, (data) => {
-							console.log(
-								'agentAssistUtils | createWebSocketIoClient | Received ask_me_anything_response'
-							);
-							console.log(
-								'agentAssistUtils | createWebSocketIoClient | ask_me_anything_response: ' +
-									JSON.stringify(data)
-							);
-							let message = AgentAssistEvents.aa_lms_event(
-								AgentAssistLabels.ASK_ME_ANYTHING_RESPONSE,
-								data
-							);
-							const messageContext = createMessageContext();
-							publish(messageContext, VOICE_CALL_CHANNEL, message);
+						this.websocket.on(AgentAssistLabels.ASK_ME_ANYTHING_RESPONSE, (data, ack) => {
+							try {
+								console.log(
+									'agentAssistUtils | createWebSocketIoClient | Received ask_me_anything_response'
+								);
+								console.log(
+									'agentAssistUtils | createWebSocketIoClient | ask_me_anything_response: ' +
+										JSON.stringify(data)
+								);
+								let message = AgentAssistEvents.aa_lms_event(
+									AgentAssistLabels.ASK_ME_ANYTHING_RESPONSE,
+									data
+								);
+								const messageContext = createMessageContext();
+								const interactionId = data?.data?.card_metadata?.interaction_id;
+								publish(messageContext, VOICE_CALL_CHANNEL, message);
+								// ✅ Send ACK back to server (include whatever the server expects)
+								if (typeof ack === 'function') {
+									ack(true); // if server expects a boolean
+								}
+								LWCLogger({
+									messageText:
+										'Ask Me Anything ACK received; Interaction ID: ' +
+										localStorage.getItem('agentAssistGenesysInteractionId') +
+										'; Agent Assist Session ID: ' +
+										localStorage.getItem('agentAssistVoiceCallId') +
+										'; Card Title: ' +
+										data?.data?.content?.header,
+									source: 'setupWebSocketIoClient | Ask Me Anything',
+									level: 'info'
+								});
+							} catch (err) {
+								console.error('Ask me anything response handler error', err);
+								LWCLogger({
+									messageText: 'On ask_me_anything_response error',
+									source: 'createWebSocketIoClient',
+									level: 'error'
+								});
+							}
 						});
 					}
 
@@ -164,16 +252,131 @@ export default class AgentAssistWebsocket {
 						);
 					});
 
-					this.websocket.on(AgentAssistLabels.SET_INTERACTION_RESPONSE, (data) => {
-						console.log('agentAssistUtils | createWebSocketIoClient | Received SET_INTERACTION_CONTEXT');
-						console.log(
-							'agentAssistUtils | createWebSocketIoClient | set_customer_context: ' + JSON.stringify(data)
-						);
-						const messageContext = createMessageContext();
-						publish(messageContext, VOICE_CALL_CHANNEL, {
-							type: AgentAssistLabels.SET_INTERACTION_RESPONSE,
-							data: data
-						});
+					this.websocket.on(AgentAssistLabels.SET_INTERACTION_RESPONSE, (data, ack) => {
+						try {
+							console.log(
+								'agentAssistUtils | createWebSocketIoClient | Received SET_INTERACTION_CONTEXT'
+							);
+							console.log(
+								'agentAssistUtils | createWebSocketIoClient | set_customer_context: ' +
+									JSON.stringify(data)
+							);
+							const messageContext = createMessageContext();
+							publish(messageContext, VOICE_CALL_CHANNEL, {
+								type: AgentAssistLabels.SET_INTERACTION_RESPONSE,
+								data: data
+							});
+							// ✅ Send ACK back to server (include whatever the server expects)
+							if (typeof ack === 'function') {
+								ack(true); // if server expects a boolean
+							}
+							LWCLogger({
+								messageText:
+									'Interaction Context Ack returned; Interaction ID: ' +
+									localStorage.getItem('agentAssistGenesysInteractionId') +
+									'; Agent Assist Session ID: ' +
+									localStorage.getItem('agentAssistVoiceCallId'),
+								source: 'setupWebSocketIoClient | Interaction Context Returned',
+								level: 'info'
+							});
+						} catch (err) {
+							console.error('SET_INTERACTION_CONTEXT handler error', err);
+						}
+					});
+					this.websocket.on(AgentAssistLabels.POST_CALL_SUMMARY, (data, ack) => {
+						try {
+							console.log('agentAssistUtils | WebSocketIoClientOn | Received POST_CALL_SUMMARY');
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | transcript_summary: ' + JSON.stringify(data)
+							);
+							const messageContext = createMessageContext();
+							publish(messageContext, VOICE_CALL_CHANNEL, {
+								type: AgentAssistLabels.POST_CALL_SUMMARY,
+								data: data
+							});
+							// ✅ Send ACK back to server (include whatever the server expects)
+							if (typeof ack === 'function') {
+								ack(true); // if server expects a boolean
+							}
+						} catch (err) {
+							console.error('POST_CALL_SUMMARY handler error', err);
+						}
+					});
+
+					this.websocket.on(AgentAssistLabels.Set_Interaction_Context_Notification, (data) => {
+						try {
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | Received Set_Interaction_Context_Notification'
+							);
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | Set_Interaction_Context_Notification: ' +
+									JSON.stringify(data)
+							);
+							const messageContext = createMessageContext();
+							publish(messageContext, VOICE_CALL_CHANNEL, {
+								type: AgentAssistLabels.Set_Interaction_Context_Notification,
+								data: data
+							});
+							// ✅ Send ACK back to server (include whatever the server expects)
+							// if (typeof ack === 'function') {
+							//     ack(true); // if server expects a boolean
+							// }
+						} catch (err) {
+							console.error('Set_Interaction_Context_Notification error', err);
+						}
+					});
+
+					this.websocket.on(AgentAssistLabels.Set_Customer_Context_Notification, (data) => {
+						try {
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | Received Set_Customer_Context_Notification'
+							);
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | Set_Customer_Context_Notification: ' +
+									JSON.stringify(data)
+							);
+							const messageContext = createMessageContext();
+							publish(messageContext, VOICE_CALL_CHANNEL, {
+								type: AgentAssistLabels.Set_Customer_Context_Notification,
+								data: data
+							});
+							// ✅ Send ACK back to server (include whatever the server expects)
+							// if (typeof ack === 'function') {
+							//     ack(true); // if server expects a boolean
+							// }
+							LWCLogger({
+								messageText:
+									'Customer Context Ack returned; Interaction ID: ' +
+									localStorage.getItem('agentAssistGenesysInteractionId') +
+									'; Agent Assist Session ID: ' +
+									localStorage.getItem('agentAssistVoiceCallId'),
+								source: 'setupWebSocketIoClient | Ask Me Anything',
+								level: 'info'
+							});
+						} catch (err) {
+							console.error('Set_Customer_Context_Notification error', err);
+						}
+					});
+
+					this.websocket.on(AgentAssistLabels.Activity_Status_Indicator, (data, ack) => {
+						try {
+							console.log('agentAssistUtils | WebSocketIoClientOn | Received Activity_Status_Indicator');
+							console.log(
+								'agentAssistUtils | WebSocketIoClientOn | Activity_Status_Indicator: ' +
+									JSON.stringify(data)
+							);
+							const messageContext = createMessageContext();
+							publish(messageContext, VOICE_CALL_CHANNEL, {
+								type: AgentAssistLabels.Activity_Status_Indicator,
+								data: data
+							});
+							// ✅ Send ACK back to server (include whatever the server expects)
+							if (typeof ack === 'function') {
+								ack(true); // if server expects a boolean
+							}
+						} catch (err) {
+							console.error('Activity_Status_Indicator handler error', err);
+						}
 					});
 				});
 				console.log('agentAssistUtils | createWebSocketIoClient | after loadScript');
@@ -194,7 +397,8 @@ export default class AgentAssistWebsocket {
 			if (
 				this.agentSalesforceId == interactionDetails.data.payload.CreatedById &&
 				this.interactionId != interactionDetails.data.payload.InteractionId__c &&
-				!interactionDetails.data.payload.Call_Ended__c
+				!interactionDetails.data.payload.Call_Disposition__c != 'completed' &&
+				interactionDetails.data.payload.InteractionId__c != this.lastinteractionId
 			) {
 				this.interactionId = interactionDetails.data.payload.InteractionId__c;
 				const messageContext = createMessageContext();
@@ -217,11 +421,11 @@ export default class AgentAssistWebsocket {
 	async endInteraction(interactionId) {
 		try {
 			console.log('Call ended: interaction ID: ' + this.interactionId);
+			this.lastinteractionId = this.interactionId;
 			let message = AgentAssistEvents.aa_lms_event(AgentAssistLabels.END_INTERACTION, {
 				interactionId: interactionId
 			});
 			this.interactionId = null;
-			this.agentSalesforceId = null;
 			const messageContext = createMessageContext();
 			publish(messageContext, VOICE_CALL_CHANNEL, message);
 		} catch (error) {
@@ -370,6 +574,7 @@ export const AgentAssistLabels = {
 	ASK_ME_ANYTHING_RESPONSE: 'ask_me_anything_response',
 	KNOWLEDGE_CARD: 'knowledge_card',
 	HISTORICAL_INTERACTION_SUMMARY: 'historical_interaction_summary',
+	POST_CALL_SUMMARY: 'transcript_summary',
 	GET_INTERACTION_CONTEXT: 'get_interaction_context',
 	SET_INTERACTION_CONTEXT: 'set_interaction_context',
 	UPDATE_INTERACTION: 'update_interaction',
@@ -377,7 +582,10 @@ export const AgentAssistLabels = {
 	AGENT_FEEDBACK: 'agent_feedback',
 	END_INTERACTION: 'end_interaction_event',
 	ERROR: 'agent_assist_error',
-	SET_INTERACTION_RESPONSE: 'set_interaction_context_ack'
+	SET_INTERACTION_RESPONSE: 'set_interaction_context_ack',
+	Activity_Status_Indicator: 'activity_status_indicator',
+	Set_Interaction_Context_Notification: 'set_interaction_context_notification',
+	Set_Customer_Context_Notification: 'set_customer_context_notification'
 };
 
 export const AgentAssistEvents = {
@@ -489,8 +697,8 @@ export const AgentAssistEvents = {
 			card_metadata: {
 				interacting_about: {
 					customer_type: customer_type,
-					enterprise_person_id: '',
-					customer_id: enterprise_person_id
+					enterprise_person_id: enterprise_person_id == null ? '' : enterprise_person_id,
+					customer_id: customer_id == null ? '' : customer_id
 				},
 				get_historical_interactions:
 					get_historical_interactions_flag === true || get_historical_interactions_flag === false

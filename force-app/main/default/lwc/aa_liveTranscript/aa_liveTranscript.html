@@ -1,0 +1,100 @@
+<template>
+	<div class="transcript-panel">
+		<!-- Header -->
+		<div class="transcript-header">
+			<div class="header-left">
+				<span class="mic-icon">
+					<lightning-icon
+						icon-name="utility:voice"
+						size="x-small"
+						alternative-text="Live Transcript"
+					></lightning-icon>
+				</span>
+				<span class="header-title">Live Transcript</span>
+				<template lwc:if={isLive}>
+					<span class="live-badge">
+						<span class="live-dot"></span>
+						LIVE
+					</span>
+				</template>
+			</div>
+			<button class="close-btn" onclick={handleClose} title="Close Transcript" aria-label="Close Transcript">
+				<lightning-icon icon-name="utility:close" size="x-small" alternative-text="Close"></lightning-icon>
+			</button>
+		</div>
+
+		<!-- Search Bar -->
+		<div class="search-bar">
+			<div class="search-input-wrap">
+				<lightning-icon
+					icon-name="utility:search"
+					size="xx-small"
+					alternative-text="Search"
+					class="search-icon"
+				></lightning-icon>
+				<input
+					type="text"
+					class="search-input"
+					placeholder="Search transcript..."
+					value={searchTerm}
+					oninput={handleSearchInput}
+					aria-label="Search transcript"
+				/>
+				<template lwc:if={searchTerm}>
+					<span class="match-counter">{matchLabel}</span>
+					<button
+						class="search-nav-btn"
+						onclick={handlePrev}
+						title="Previous match"
+						aria-label="Previous match"
+					>
+						&#8249;
+					</button>
+					<button class="search-nav-btn" onclick={handleNext} title="Next match" aria-label="Next match">
+						&#8250;
+					</button>
+					<button
+						class="search-clear-btn"
+						onclick={clearSearch}
+						title="Clear search"
+						aria-label="Clear search"
+					>
+						&#10005;
+					</button>
+				</template>
+			</div>
+		</div>
+
+		<!-- Error Banner -->
+		<template lwc:if={hasError}>
+			<div class="error-banner">
+				<lightning-icon
+					icon-name="utility:error"
+					size="x-small"
+					alternative-text="Error"
+					class="error-icon"
+				></lightning-icon>
+				<span class="error-message">{errorMessage}</span>
+				<button class="dismiss-btn" onclick={dismissError} aria-label="Dismiss error">&#10005;</button>
+			</div>
+		</template>
+
+		<!-- Transcript Body -->
+		<div class="transcript-body" data-id="transcript-body" lwc:ref="transcriptBody">
+			<!-- Chunks are appended via JS directly into this container -->
+		</div>
+
+		<!-- Footer -->
+		<div class="transcript-footer">
+			<template lwc:if={isLive}>
+				<span class="footer-live-indicator">
+					<span class="live-dot-sm"></span>
+					Transcribing...
+				</span>
+			</template>
+			<template lwc:else>
+				<span class="footer-ended">&#9832; Call ended</span>
+			</template>
+		</div>
+	</div>
+</template>

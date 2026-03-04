@@ -72,6 +72,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	knowledgeCardPermission = hasKnowledgeCardPermission;
 	proxyLMSSubscription = null;
 	accessToken = null;
+	@track showTranscript = false;
 
 	get error() {
 		return this.errorMessage ? true : false;
@@ -626,6 +627,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		setTimeout(() => {
 			this.scrollToUtilityBarBottom();
 		}, 300);
+	}
+
+	handleToggleTranscript() {
+		this.showTranscript = !this.showTranscript;
 	}
 
 	scrollToUtilityBarBottom() {
