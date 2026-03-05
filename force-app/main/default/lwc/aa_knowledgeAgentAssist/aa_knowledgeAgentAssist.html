@@ -1,5 +1,11 @@
 <template>
 	<template if:true={showAgentAssist}>
+		<template if:true={isOrchestrating}>
+			<div class="orchestration-header">
+				<div class="orchestration-dot"></div>
+				<span class="orchestration-text">{orchestrationStatus}</span>
+			</div>
+		</template>
 		<div class="container">
 			<div lwc:ref="container" onscroll={handleScroll} class="card-container">
 				<template if:true={isKnowledgeCards}>

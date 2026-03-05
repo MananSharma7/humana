@@ -2,6 +2,9 @@ import { LightningElement, track, wire } from 'lwc';
 import hasknowledge from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
 import hasAMAPermission from '@salesforce/customPermission/AA_AskMeAnything';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
+import { subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
+import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
+import { AgentAssistLabels } from 'c/aa_UtilsHum';
 
 export default class Aa_knowledgeAgentAssist extends LightningElement {
 	showknowledge = hasknowledge;
@@ -13,6 +16,61 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	isFeatureEnabled = false;
 	isKnowledgeCardEnabled = false;
 	isAMAEnabled = false;
+
+	@track orchestrationStatus = '';
+	@track isOrchestrating = false;
+	subscription = null;
+
+	@wire(MessageContext)
+	messageContext;
+
+	connectedCallback() {
+		this.subscribeToMessageChannel();
+	}
+
+	disconnectedCallback() {
+		if (this.subscription) {
+			unsubscribe(this.subscription);
+			this.subscription = null;
+		}
+	}
+
+	subscribeToMessageChannel() {
+		if (!this.subscription) {
+			this.subscription = subscribe(
+				this.messageContext,
+				VOICE_CALL_CHANNEL,
+				(message) => this.handleMessage(message),
+				{ scope: APPLICATION_SCOPE }
+			);
+		}
+	}
+
+	handleMessage(message) {
+		if (message && message.type === AgentAssistLabels.Activity_Status_Indicator) {
+			const data = message.data?.data || message.data;
+			let statusText = '';
+			if (data && data.message) {
+				statusText = data.message;
+			} else if (data && data.content && data.content.text) {
+				statusText = data.content.text;
+			} else if (data && data.status) {
+				statusText = data.status;
+			}
+
+			if (statusText) {
+				this.orchestrationStatus = statusText;
+				this.isOrchestrating = true;
+			} else {
+				// If no status text is provided, we can hide it or clear it
+				this.isOrchestrating = false;
+				this.orchestrationStatus = '';
+			}
+		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
+			this.isOrchestrating = false;
+			this.orchestrationStatus = '';
+		}
+	}
 
 	handleReplyCard(event) {
 		this.replyCard = event.detail;
