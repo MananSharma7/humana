@@ -26,6 +26,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 
 	connectedCallback() {
 		this.subscribeToMessageChannel();
+		this.handleStateLoad();
 	}
 
 	disconnectedCallback() {
@@ -43,6 +44,32 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 				(message) => this.handleMessage(message),
 				{ scope: APPLICATION_SCOPE }
 			);
+		}
+	}
+
+	handleStateLoad() {
+		try {
+			const cachedOrchestrationStatus = localStorage.getItem('aa_orchestration_status');
+			const cachedIsOrchestrating = localStorage.getItem('aa_is_orchestrating');
+
+			if (cachedIsOrchestrating === 'true') {
+				this.isOrchestrating = true;
+				this.orchestrationStatus = cachedOrchestrationStatus || '';
+			} else {
+				this.isOrchestrating = false;
+				this.orchestrationStatus = '';
+			}
+		} catch (e) {
+			console.error('Error loading state', e);
+		}
+	}
+
+	saveState() {
+		try {
+			localStorage.setItem('aa_orchestration_status', this.orchestrationStatus || '');
+			localStorage.setItem('aa_is_orchestrating', this.isOrchestrating);
+		} catch (e) {
+			console.error('Error saving state', e);
 		}
 	}
 
@@ -66,9 +93,11 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 				this.isOrchestrating = false;
 				this.orchestrationStatus = '';
 			}
+			this.saveState();
 		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
 			this.isOrchestrating = false;
 			this.orchestrationStatus = '';
+			this.saveState();
 		}
 	}
 
