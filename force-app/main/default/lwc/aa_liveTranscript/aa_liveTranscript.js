@@ -1,7 +1,5 @@
 import { LightningElement, track } from 'lwc';
 
-// ─── Mock chunk data (Phase 1) ───────────────────────────────────────────────
-// Replace this array with real Platform Event / LMS data in Phase 2
 const MOCK_CHUNKS = [
 	{
 		version: '1.0',
@@ -157,7 +155,7 @@ const MOCK_CHUNKS = [
 		},
 		error: null
 	},
-	// Error chunk — always last in mock data
+
 	{
 		error: {
 			error_status: 'true',
@@ -168,11 +166,6 @@ const MOCK_CHUNKS = [
 	}
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * Format an ISO timestamp to "H:MMam/pm" e.g. "1:03pm"
- */
 function formatTime(isoString) {
 	try {
 		const d = new Date(isoString);
@@ -186,27 +179,20 @@ function formatTime(isoString) {
 	}
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default class Aa_liveTranscript extends LightningElement {
-	// ── Reactive state ──────────────────────────────────────────────────────
 	@track isLive = true;
 	@track hasError = false;
 	@track errorMessage = '';
 	@track searchTerm = '';
 	@track matchLabel = '0/0';
 
-	// ── Internal state ──────────────────────────────────────────────────────
 	_chunkIndex = 0;
 	_streamInterval = null;
 	_searchDebounceTimer = null;
-	_matchNodes = []; // array of <mark> DOM nodes  for current search
-	_matchIndex = -1; // which match is currently "active" (yellow)
-
-	// ── Lifecycle ────────────────────────────────────────────────────────────
+	_matchNodes = [];
+	_matchIndex = -1;
 
 	connectedCallback() {
-		// Start mock streaming: one chunk every 1400 ms
 		this._streamInterval = window.setInterval(() => {
 			this._deliverNextChunk();
 		}, 1400);
@@ -215,8 +201,6 @@ export default class Aa_liveTranscript extends LightningElement {
 	disconnectedCallback() {
 		this._stopStream();
 	}
-
-	// ── Streaming ─────────────────────────────────────────────────────────────
 
 	_stopStream() {
 		if (this._streamInterval) {
@@ -236,16 +220,11 @@ export default class Aa_liveTranscript extends LightningElement {
 		this._processChunk(chunk);
 	}
 
-	/**
-	 * Public API – in Phase 2 the LMS subscriber will call this directly.
-	 * @param {Object} chunk  – raw payload from Platform Event / LMS
-	 */
 	processChunk(chunk) {
 		this._processChunk(chunk);
 	}
 
 	_processChunk(chunk) {
-		// Error payload
 		if (chunk.error && chunk.error.error_status) {
 			this._stopStream();
 			this.isLive = false;
@@ -254,35 +233,27 @@ export default class Aa_liveTranscript extends LightningElement {
 			return;
 		}
 
-		// Success payload
 		const { participant_role, content, send_time } = chunk.data;
 		const isAgent = participant_role === 'AGENT';
 
-		// Build DOM node — direct append, NO tracked array, no full re-render
 		const node = this._buildMessageNode(isAgent, participant_role, content, send_time);
 
 		const body = this.template.querySelector('[data-id="transcript-body"]');
 		if (body) {
 			body.appendChild(node);
-			// Auto-scroll to bottom
+
 			body.scrollTop = body.scrollHeight;
 		}
 
-		// Re-apply search highlights if a search is active
 		if (this.searchTerm) {
 			this._applyHighlights(this.searchTerm);
 		}
 	}
 
-	/**
-	 * Builds a single message DOM node without using innerHTML on user content.
-	 */
 	_buildMessageNode(isAgent, role, content, sendTime) {
-		// Outer wrapper
 		const wrap = document.createElement('div');
 		wrap.className = isAgent ? 'lt-msg-wrap lt-agent-wrap' : 'lt-msg-wrap lt-caller-wrap';
 
-		// Sender label + time
 		const meta = document.createElement('div');
 		meta.className = 'lt-meta';
 		const labelSpan = document.createElement('span');
@@ -294,14 +265,12 @@ export default class Aa_liveTranscript extends LightningElement {
 		meta.appendChild(labelSpan);
 		meta.appendChild(timeSpan);
 
-		// Bubble
 		const bubble = document.createElement('div');
 		bubble.className = isAgent ? 'lt-bubble lt-bubble-agent' : 'lt-bubble lt-bubble-caller';
 
-		// Text span (search highlights will wrap text nodes inside this)
 		const textSpan = document.createElement('span');
 		textSpan.className = 'lt-msg-text';
-		textSpan.textContent = content; // safe — textContent, not innerHTML
+		textSpan.textContent = content;
 
 		bubble.appendChild(textSpan);
 		wrap.appendChild(meta);
@@ -310,13 +279,10 @@ export default class Aa_liveTranscript extends LightningElement {
 		return wrap;
 	}
 
-	// ── Search & Highlight ────────────────────────────────────────────────────
-
 	handleSearchInput(e) {
 		const term = e.target.value;
 		this.searchTerm = term;
 
-		// Debounce 200 ms
 		window.clearTimeout(this._searchDebounceTimer);
 		this._searchDebounceTimer = window.setTimeout(() => {
 			this._clearHighlights();
@@ -348,15 +314,12 @@ export default class Aa_liveTranscript extends LightningElement {
 		const total = this._matchNodes.length;
 		if (!total) return;
 
-		// Wrap around
 		const newIdx = ((idx % total) + total) % total;
 
-		// Deactivate previous
 		if (this._matchIndex >= 0 && this._matchIndex < this._matchNodes.length) {
 			this._matchNodes[this._matchIndex].className = 'lt-highlight';
 		}
 
-		// Activate new
 		this._matchIndex = newIdx;
 		const activeNode = this._matchNodes[newIdx];
 		activeNode.className = 'lt-highlight lt-highlight-active';
@@ -365,10 +328,6 @@ export default class Aa_liveTranscript extends LightningElement {
 		this.matchLabel = `${newIdx + 1}/${total}`;
 	}
 
-	/**
-	 * Walk all .lt-msg-text spans in the transcript body,
-	 * split text nodes at match positions, and wrap matches in <mark>.
-	 */
 	_applyHighlights(term) {
 		this._clearHighlights();
 		const body = this.template.querySelector('[data-id="transcript-body"]');
@@ -379,9 +338,6 @@ export default class Aa_liveTranscript extends LightningElement {
 		const regex = new RegExp(`(${this._escapeRegex(term)})`, 'gi');
 
 		textSpans.forEach((span) => {
-			// We work with child text nodes inside the span
-			// At this point the span only has one text node (from textContent set initially)
-			// or plain text nodes after previous searches were cleared.
 			const textNodes = this._getTextNodes(span);
 
 			textNodes.forEach((textNode) => {
@@ -389,7 +345,7 @@ export default class Aa_liveTranscript extends LightningElement {
 				if (!text) return;
 
 				const parts = text.split(regex);
-				if (parts.length <= 1) return; // no match in this node
+				if (parts.length <= 1) return;
 
 				const frag = document.createDocumentFragment();
 				parts.forEach((part) => {
@@ -402,7 +358,7 @@ export default class Aa_liveTranscript extends LightningElement {
 					} else {
 						frag.appendChild(document.createTextNode(part));
 					}
-					regex.lastIndex = 0; // reset stateful regex
+					regex.lastIndex = 0;
 				});
 
 				textNode.parentNode.replaceChild(frag, textNode);
@@ -420,9 +376,6 @@ export default class Aa_liveTranscript extends LightningElement {
 		}
 	}
 
-	/**
-	 * Remove all <mark> nodes, restoring plain text.
-	 */
 	_clearHighlights() {
 		const body = this.template.querySelector('[data-id="transcript-body"]');
 		if (!body) return;
@@ -431,14 +384,13 @@ export default class Aa_liveTranscript extends LightningElement {
 		marks.forEach((mark) => {
 			const parent = mark.parentNode;
 			parent.replaceChild(document.createTextNode(mark.textContent), mark);
-			parent.normalize(); // merge adjacent text nodes
+			parent.normalize();
 		});
 
 		this._matchNodes = [];
 		this._matchIndex = -1;
 	}
 
-	/** Collect all leaf text nodes within an element */
 	_getTextNodes(el) {
 		const nodes = [];
 		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
@@ -453,14 +405,10 @@ export default class Aa_liveTranscript extends LightningElement {
 		return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	}
 
-	// ── Error Banner ──────────────────────────────────────────────────────────
-
 	dismissError() {
 		this.hasError = false;
 		this.errorMessage = '';
 	}
-
-	// ── Panel Toggle ──────────────────────────────────────────────────────────
 
 	handleClose() {
 		this.dispatchEvent(new CustomEvent('toggletranscript'));

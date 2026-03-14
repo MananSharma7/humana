@@ -1,77 +1,21 @@
-/* ============================================================
-   aa_liveTranscript – Panel Styles
-   ============================================================ */
-
 :host {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 }
 
-/* ------ Panel Shell ------ */
 .transcript-panel {
 	display: flex;
 	flex-direction: column;
 	width: 340px;
 	min-width: 340px;
+	padding-left: 24px;
 	height: 100%;
 	background: #ffffff;
 	border-right: 1px solid #e0e0e0;
 	box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08);
 	overflow: hidden;
 	font-family: 'Salesforce Sans', Arial, sans-serif;
-}
-
-/* ------ Header ------ */
-.transcript-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 12px;
-	background: #0b5cab;
-	color: #ffffff;
-	flex-shrink: 0;
-}
-
-.header-left {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.mic-icon {
-	display: flex;
-	align-items: center;
-	--slds-c-icon-color-foreground-default: #ffffff;
-}
-
-.header-title {
-	font-size: 14px;
-	font-weight: 600;
-	letter-spacing: 0.2px;
-	color: #fff;
-}
-
-/* Live badge */
-.live-badge {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	background: rgba(255, 255, 255, 0.2);
-	border-radius: 12px;
-	padding: 2px 8px;
-	font-size: 10px;
-	font-weight: 700;
-	color: #fff;
-	letter-spacing: 0.8px;
-}
-
-.live-dot {
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	background: #ff4d4d;
-	animation: pulse 1.4s infinite;
 }
 
 @keyframes pulse {
@@ -104,7 +48,6 @@
 	background: rgba(255, 255, 255, 0.2);
 }
 
-/* ------ Search Bar ------ */
 .search-bar {
 	padding: 8px 10px;
 	background: #f5f7fa;
@@ -182,7 +125,6 @@
 	color: #e53935;
 }
 
-/* ------ Error Banner ------ */
 .error-banner {
 	display: flex;
 	align-items: center;
@@ -215,7 +157,6 @@
 	flex-shrink: 0;
 }
 
-/* ------ Transcript Body ------ */
 .transcript-body {
 	flex: 1;
 	overflow-y: auto;
@@ -226,20 +167,13 @@
 	scroll-behavior: smooth;
 }
 
-/* ------ Message Bubbles (injected via JS) ------ */
-
-/* These classes are applied to the dynamically created DOM nodes */
-/* They must be in :host or global scope for LWC shadow DOM */
-
-/* Footer */
 .transcript-footer {
 	padding: 8px 12px;
-	border-top: 1px solid #e0e0e0;
-	background: #f5f7fa;
 	font-size: 11px;
 	color: #6e6e6e;
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	flex-shrink: 0;
 }
 
@@ -263,11 +197,6 @@
 	color: #888;
 }
 
-/* ============================================================
-   Dynamically created message nodes (appended via JS)
-   These live inside the shadow root, so component CSS applies.
-   ============================================================ */
-
 .lt-msg-wrap {
 	display: flex;
 	flex-direction: column;
@@ -286,19 +215,16 @@
 	}
 }
 
-/* Agent – right-aligned */
 .lt-agent-wrap {
 	align-self: flex-end;
 	align-items: flex-end;
 }
 
-/* Caller – left-aligned */
 .lt-caller-wrap {
 	align-self: flex-start;
 	align-items: flex-start;
 }
 
-/* Meta row (role + time) */
 .lt-meta {
 	display: flex;
 	align-items: center;
@@ -326,7 +252,6 @@
 	color: #aaa;
 }
 
-/* Bubble */
 .lt-bubble {
 	padding: 8px 12px;
 	border-radius: 12px;
@@ -348,22 +273,19 @@
 	border-bottom-left-radius: 3px;
 }
 
-/* Text span inside bubble – search acts on this */
 .lt-msg-text {
 	display: inline;
 }
 
-/* ── Search Highlights ─────────────────────────── */
-
 mark.lt-highlight {
-	background: #bfdbfe; /* blue – non-active match */
+	background: #bfdbfe;
 	color: inherit;
 	border-radius: 2px;
 	padding: 0 1px;
 }
 
 mark.lt-highlight-active {
-	background: #fbbf24; /* amber – currently focused match */
+	background: #fbbf24;
 	color: #1a1a1a;
 	border-radius: 2px;
 	padding: 0 1px;
