@@ -31,9 +31,11 @@
 						<span class="tab-label">Transcript</span>
 					</button>
 
-					<!-- Live Transcript Panel -->
+					<!-- Live Transcript Panel (overlays main panels) -->
 					<template if:true={showTranscript}>
-						<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
+						<div class="transcript-panel">
+							<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
+						</div>
 					</template>
 
 					<!-- Main Panels -->

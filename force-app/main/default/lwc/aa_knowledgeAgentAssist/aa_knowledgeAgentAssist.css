@@ -13,11 +13,12 @@
 	padding: 10px;
 	overflow: hidden;
 	background-color: #f2f2f2;
+	overflow-y: auto;
 }
-
-.container .card-container {
+.card-container {
 	flex: 1;
 	overflow-y: auto;
+	padding-left: 25px;
 }
 .permissioncontainer {
 	display: flex;

@@ -356,7 +356,8 @@ export default class Aa_interaction360 extends LightningElement {
 
 		if (isNaN(number)) return;
 
-		this.callHistories[number].isExpanded = !this.callHistories[number].isExpanded;
+		const updated = { ...this.callHistories[number], isExpanded: !this.callHistories[number].isExpanded };
+		this.callHistories = [...this.callHistories.slice(0, number), updated, ...this.callHistories.slice(number + 1)];
 	}
 
 	@wire(isFeatureEnabled, { featureName: 'MP_Interaction_360' })
