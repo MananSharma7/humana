@@ -50,8 +50,8 @@
 	width: 24px;
 	min-width: 24px;
 	height: 20%;
-	background: #0b5cab;
-	border: none;
+	background: #fff;
+	border: 1px solid #1f85eb;
 	cursor: pointer;
 	padding: 0;
 	position: absolute;
@@ -62,7 +62,7 @@
 }
 
 .transcript-tab-btn:hover {
-	background: #0a4e9b;
+	background: #f2f2f2;
 }
 
 .tab-label {
@@ -71,7 +71,7 @@
 	transform: rotate(180deg);
 	font-size: 11px;
 	font-weight: 600;
-	color: #ffffff;
+	color: #1f85eb;
 	letter-spacing: 0.8px;
 	text-transform: uppercase;
 	user-select: none;
