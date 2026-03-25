@@ -53,7 +53,6 @@ export default class Aa_interaction360 extends LightningElement {
 				if (this.callHistories.length > 0) {
 					this.errorMessage = '';
 					this.updateStatusMessage(false, false);
-					this.isExpanded = true;
 				}
 				console.log(
 					'Interaction360 handleStateLoad: Restored ' + this.callHistories.length + ' history items.'
@@ -228,7 +227,6 @@ export default class Aa_interaction360 extends LightningElement {
 			if (this.callHistories.length > 0) {
 				this.errorMessage = '';
 				this.updateStatusMessage(false, false);
-				this.isExpanded = true;
 			}
 		} catch (error) {
 			console.error('Interaction360 History Error:', error);
@@ -241,13 +239,10 @@ export default class Aa_interaction360 extends LightningElement {
 	updateStatusMessage(noCall, awaitingNewMessage) {
 		if (noCall) {
 			this.statusMessage = 'No previous interactions found';
-			this.isExpanded = true;
 		} else if (awaitingNewMessage) {
 			this.statusMessage = 'Awaiting new interaction';
-			this.isExpanded = true;
 		} else {
 			this.statusMessage = '';
-			this.isExpanded = false;
 		}
 	}
 
@@ -292,12 +287,10 @@ export default class Aa_interaction360 extends LightningElement {
 
 	showError(message) {
 		this.errorMessage = message;
-		this.isExpanded = true;
 		LWCLogger({ messageText: this.errorMessage, source: 'Interaction360 LWC comp', level: 'error' });
 	}
 	handleInitialization() {
 		this.errorMessage = '';
-		this.isExpanded = true;
 		if (this.callHistories.length === 0) {
 			this.updateStatusMessage(true, false);
 		}

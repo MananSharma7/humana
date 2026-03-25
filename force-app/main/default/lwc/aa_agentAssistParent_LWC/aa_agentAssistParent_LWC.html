@@ -21,7 +21,7 @@
 			<template if:false={isLoading}>
 				<div class="outer-container">
 					<!-- Vertical transcript tab button (always visible) -->
-					<button
+					<!-- <button
 						class="transcript-tab-btn"
 						onclick={handleToggleTranscript}
 						title="Toggle Live Transcript"
@@ -29,14 +29,14 @@
 						aria-pressed={showTranscript}
 					>
 						<span class="tab-label">Transcript</span>
-					</button>
+					</button> -->
 
 					<!-- Live Transcript Panel (overlays main panels) -->
-					<template if:true={showTranscript}>
+					<!-- <template if:true={showTranscript}>
 						<div class="transcript-panel">
 							<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
 						</div>
-					</template>
+					</template> -->
 
 					<!-- Main Panels -->
 					<div class="main-panels">

@@ -8,8 +8,7 @@
 	flex-direction: row;
 	height: 100%;
 	max-height: 100vh;
-	overflow-x: hidden;
-	overflow-y: auto;
+	overflow: hidden;
 	position: relative;
 }
 
@@ -26,7 +25,20 @@
 	flex: 1;
 	min-width: 0;
 	height: 100%;
+	overflow: hidden;
+	/* padding-left: 24px; */
+}
+
+/* Knowledge component fills remaining space and scrolls internally */
+c-aa_knowledge-agent-assist {
+	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
+}
+
+/* Interaction 360 always stays visible at the bottom */
+c-aa_interaction360 {
+	flex-shrink: 0;
 }
 
 .transcript-panel {
