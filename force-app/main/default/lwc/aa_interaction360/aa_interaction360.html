@@ -18,16 +18,16 @@
 
 					<lightning-icon
 						class="slds-is-absolute"
-						icon-name={expandIconName}
-						alternative-text={expandIconTitle}
-						style={expandIconStyle}
+						icon-name="utility:expand_alt"
+						alternative-text="expand_alt"
+						style="top: 50%; right: 5%; translate: 50% -50%; cursor: pointer"
 						size="x-small"
 						lwc:ref="expandIcon"
-						aria-expanded={expandIconAria}
+						aria-expanded="false"
 						onclick={toggleExpanded}
 						onkeypress={toggleExpanded}
 						tabindex="0"
-						title={expandIconTitle}
+						title="expand_alt"
 					></lightning-icon>
 				</ul>
 				<div
@@ -76,8 +76,7 @@
 														size="xx-small"
 														style="color: #181818"
 														title="chevronup"
-													>
-													</lightning-icon>
+													></lightning-icon>
 													<lightning-icon
 														lwc:else
 														icon-name="utility:chevrondown"
