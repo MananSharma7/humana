@@ -196,14 +196,14 @@ export default class Aa_interaction360 extends LightningElement {
 				const actionsList = (body?.actions_taken || [])
 					.flatMap((item) => (item.text || '').split('\n'))
 					.map((text) => text.trim())
-					.filter((text) => text !== '' && text.toUpperCase() !== 'N/A');
+					.filter((text) => text !== '');
 				const hasActions = actionsList.length > 0;
 
 				// Extract outcomes (handle array of objects from updated schema)
 				const outcomeList = (body?.outcome || [])
 					.flatMap((item) => (item.text || '').split('\n'))
 					.map((text) => text.trim())
-					.filter((text) => text !== '' && text.toUpperCase() !== 'N/A');
+					.filter((text) => text !== '');
 				const hasOutcome = outcomeList.length > 0;
 
 				return {
