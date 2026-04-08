@@ -19,16 +19,16 @@
 
 					<lightning-icon
 						class="slds-is-absolute"
-						icon-name={expandIconName}
-						alternative-text={expandIconTitle}
-						style={expandIconStyle}
+						icon-name="utility:expand_alt"
+						alternative-text="expand_alt"
+						style="top: 50%; right: 5%; translate: 50% -50%; cursor: pointer"
 						size="x-small"
 						lwc:ref="expandIcon"
-						aria-expanded={expandIconAria}
+						aria-expanded="false"
 						onclick={toggleExpanded}
 						onkeypress={toggleExpanded}
 						tabindex="0"
-						title={expandIconTitle}
+						title="expand_alt"
 					></lightning-icon>
 				</ul>
 				<div
@@ -51,78 +51,75 @@
 							</div>
 						</template>
 						<template lwc:else>
-							<template lwc:if={hasHistory}>
-								<template for:each={callHistories} for:item="callHistory">
-									<li key={callHistory.id} class="slds-accordion__list-item">
-										<section class="slds-accordion__section">
-											<div class="slds-accordion__summary">
-												<h3
-													class="slds-accordion__summary-heading"
-													style="font-weight: 500; cursor: pointer; font-size: 15px"
-													data-id={callHistory.id}
-													tabindex="0"
-													onkeypress={toggleSummaryExpanded}
-													onclick={toggleSummaryExpanded}
-												>
-													<div style="display: flex; gap: 5px; width: 100%">
-														<span
-															class="slds-accordion__summary-content"
-															title={callHistory.title}
-														>
-															{callHistory.date} - {callHistory.title}
-														</span>
-														<lightning-icon
-															lwc:if={callHistory.isExpanded}
-															icon-name="utility:chevronup"
-															alternative-text="chevronup"
-															size="xx-small"
-															style="color: #181818"
-															title="chevronup"
-														>
-														</lightning-icon>
-														<lightning-icon
-															lwc:else
-															icon-name="utility:chevrondown"
-															alternative-text="chevrondown"
-															size="xx-small"
-															style="color: #181818"
-															title="chevrondown"
-														></lightning-icon>
-													</div>
-												</h3>
-											</div>
-											<div
-												lwc:if={callHistory.isExpanded}
-												style="
-													margin: 6px;
-													color: #818181;
-													font-size: 13px;
-													line-height: 120%;
-													margin-top: 12px;
-													padding-left: 10px;
-													border-left: 1px solid rgb(129, 129, 129);
-												"
+							<template lwc:if={hasHistory} for:each={callHistories} for:item="callHistory">
+								<li key={callHistory.id} class="slds-accordion__list-item">
+									<section class="slds-accordion__section">
+										<div class="slds-accordion__summary">
+											<h3
+												class="slds-accordion__summary-heading"
+												style="font-weight: 500; cursor: pointer; font-size: 15px"
+												data-id={callHistory.id}
+												tabindex="0"
+												onkeypress={toggleSummaryExpanded}
+												onclick={toggleSummaryExpanded}
 											>
-												<p>{callHistory.summary}</p>
-												<template for:each={callHistory.details} for:item="detail">
-													<p style="font-weight: 500" key={detail.title}>{detail.title}</p>
-													<ul key={detail.title} style="padding-left: 20px">
-														<template lwc:if={detail.hasData}>
-															<template for:each={detail.list} for:item="listItem">
-																<li style="list-style: disc" key={listItem}>
-																	{listItem}
-																</li>
-															</template>
-														</template>
-														<template lwc:else>
-															<li>No data available</li>
-														</template>
-													</ul>
-												</template>
-											</div>
-										</section>
-									</li>
-								</template>
+												<div style="display: flex; gap: 5px; width: 100%">
+													<span
+														class="slds-accordion__summary-content"
+														title={callHistory.title}
+													>
+														{callHistory.date} - {callHistory.title}
+													</span>
+													<lightning-icon
+														lwc:if={callHistory.isExpanded}
+														icon-name="utility:chevronup"
+														alternative-text="chevronup"
+														size="xx-small"
+														style="color: #181818"
+														title="chevronup"
+													></lightning-icon>
+													<lightning-icon
+														lwc:else
+														icon-name="utility:chevrondown"
+														alternative-text="chevrondown"
+														size="xx-small"
+														style="color: #181818"
+														title="chevrondown"
+													></lightning-icon>
+												</div>
+											</h3>
+										</div>
+										<div
+											lwc:if={callHistory.isExpanded}
+											style="
+												margin: 6px;
+												color: #818181;
+												font-size: 13px;
+												line-height: 120%;
+												margin-top: 12px;
+												padding-left: 10px;
+												border-left: 1px solid rgb(129, 129, 129);
+											"
+										>
+											<p>{callHistory.summary}</p>
+											<template for:each={callHistory.details} for:item="detail">
+												<p style="font-weight: 500" key={detail.title}>{detail.title}</p>
+												<ul key={detail.title} style="padding-left: 20px">
+													<template
+														if:true={detail.hasData}
+														for:each={detail.list}
+														for:item="list"
+													>
+														<li style="list-style: disc" key={list}>{list}</li>
+													</template>
+													<template if:false={detail.hasData}>
+														<li>No data available</li>
+													</template>
+												</ul>
+											</template>
+										</div>
+									</section>
+								</li>
 							</template>
 							<template if:true={statusMessage}>
 								<li>&nbsp;&nbsp;{statusMessage}</li>

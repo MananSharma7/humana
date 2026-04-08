@@ -1,4 +1,32 @@
 <template>
+	<template lwc:if={isIntContextError}>
+		<div class="knowledge-error">
+			<span
+				><lightning-icon
+					icon-name="utility:error"
+					alternative-text="error"
+					size="x-small"
+					title="error"
+					class="custom-icon-error"
+				></lightning-icon>
+			</span>
+			<span style="margin-left: 5px">{intContErrorMessage}</span>
+		</div>
+	</template>
+	<template lwc:if={isCustContextError}>
+		<div class="knowledge-error">
+			<span
+				><lightning-icon
+					icon-name="utility:error"
+					alternative-text="error"
+					size="x-small"
+					title="error"
+					class="custom-icon-error"
+				></lightning-icon>
+			</span>
+			<span style="margin-left: 5px">{custContErrorMessage}</span>
+		</div>
+	</template>
 	<template lwc:if={error}>
 		<div class="knowledge-error">
 			<span
@@ -19,27 +47,7 @@
 				<p class="slds-p-around_xx-small">Loading Agent Assist...</p>
 			</template>
 			<template if:false={isLoading}>
-				<div class={outerContainerClass}>
-					<!-- Vertical transcript tab button (always visible) -->
-					<template if:true={isPopoutMode}>
-					<button
-						class="transcript-tab-btn"
-						onclick={handleToggleTranscript}
-						title="Toggle Live Transcript"
-						aria-label="Toggle Live Transcript"
-						aria-pressed={showTranscript}
-					>
-						<span class="tab-label">Transcript</span>
-					</button>
-					</template>
-
-					<!-- Live Transcript Panel (overlays main panels) -->
-					<template if:true={showTranscript}>
-						<div class="transcript-panel">
-							<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
-						</div>
-					</template>
-
+				<div class="outer-container">
 					<!-- Main Panels -->
 					<div class="main-panels">
 						<c-aa_knowledge-agent-assist record-id={recordId}></c-aa_knowledge-agent-assist>
@@ -55,6 +63,10 @@
 					You do not have permission to view Agent Assist,<br />
 					please contact your Admin.
 				</p>
+			</div>
+			<div if:true={showSSOMessage} class="slds-notify slds-notify_alert slds-alert_info" role="alert">
+				<lightning-icon variant="inverse" icon-name="utility:info" size="x-medium"></lightning-icon>
+				<h2>{ssoMessage}</h2>
 			</div>
 		</template>
 	</template>

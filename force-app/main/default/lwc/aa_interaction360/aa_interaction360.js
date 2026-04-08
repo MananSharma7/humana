@@ -5,7 +5,6 @@ import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMesse
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 import { AgentAssistLabels } from 'c/aa_UtilsHum';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
-import isSettingsEnabled from '@salesforce/apex/AA_Utility.isSettingsEnabled';
 
 export default class Aa_interaction360 extends LightningElement {
 	@api recordId;
@@ -19,7 +18,6 @@ export default class Aa_interaction360 extends LightningElement {
 	@track statusMessage = '';
 	customerInteractionId;
 	isI360Enabled = false;
-	isI360SettingsEnabled = false;
 
 	@wire(MessageContext)
 	messageContext;
@@ -193,14 +191,18 @@ export default class Aa_interaction360 extends LightningElement {
 				//const dateLabel = formatInteractionDate(dateRaw);
 				const dateLabel = this.formatInteractionDate(dateRaw);
 
-				// Extract actions taken
-				const actionsText = body?.actions_taken?.[0]?.text || '';
-				const actionsList = actionsText ? actionsText.split('\n').filter((item) => item.trim() !== '') : [];
+				// Extract actions taken (handle array of objects from updated schema)
+				const actionsList = (body?.actions_taken || [])
+					.flatMap((item) => (item.text || '').split('\n'))
+					.map((text) => text.trim())
+					.filter((text) => text !== '');
 				const hasActions = actionsList.length > 0;
 
-				// Extract outcomes
-				const outcomeText = body?.outcome?.[0]?.text || '';
-				const outcomeList = outcomeText ? outcomeText.split('\n').filter((item) => item.trim() !== '') : [];
+				// Extract outcomes (handle array of objects from updated schema)
+				const outcomeList = (body?.outcome || [])
+					.flatMap((item) => (item.text || '').split('\n'))
+					.map((text) => text.trim())
+					.filter((text) => text !== '');
 				const hasOutcome = outcomeList.length > 0;
 
 				return {
@@ -321,27 +323,20 @@ export default class Aa_interaction360 extends LightningElement {
 		this.isExpanded = !this.isExpanded;
 
 		if (this.isExpanded) {
+			event.target.iconName = 'utility:minimize_window';
+			event.target.alternativeText = 'minimize_window';
+			event.target.ariaExpanded = 'true';
+			event.target.title = 'minimize_window';
+			event.target.style.translate = '50% -70%';
 			// Dispatch a custom event to notify the parent to scroll interaction360
 			this.dispatchEvent(new CustomEvent('expand', { bubbles: true, composed: true }));
+		} else {
+			event.target.iconName = 'utility:expand_alt';
+			event.target.alternativeText = 'expand_alt';
+			event.target.ariaExpanded = 'false';
+			event.target.title = 'expand_alt';
+			event.target.style.translate = '50% -50%';
 		}
-	}
-
-	get expandIconName() {
-		return this.isExpanded ? 'utility:minimize_window' : 'utility:expand_alt';
-	}
-
-	get expandIconTitle() {
-		return this.isExpanded ? 'minimize_window' : 'expand_alt';
-	}
-
-	get expandIconStyle() {
-		return this.isExpanded
-			? 'top: 50%; right: 5%; translate: 50% -70%; cursor: pointer'
-			: 'top: 50%; right: 5%; translate: 50% -50%; cursor: pointer';
-	}
-
-	get expandIconAria() {
-		return this.isExpanded ? 'true' : 'false';
 	}
 
 	toggleSummaryExpanded(event) {
@@ -362,17 +357,7 @@ export default class Aa_interaction360 extends LightningElement {
 		}
 	}
 
-	@wire(isSettingsEnabled)
-	wiredSettingsEnabled({ error, data }) {
-		if (data) {
-			this.isI360SettingsEnabled = data;
-		} else if (error) {
-			console.error(error);
-		}
-	}
-
 	get showI360() {
-		//return this.isI360SettingsEnabled && this.showInteraction;
 		return this.isI360Enabled && this.showInteraction;
 	}
 }

@@ -29,64 +29,14 @@
 	/* padding-left: 24px; */
 }
 
-/* Knowledge component fills remaining space and scrolls internally */
 c-aa_knowledge-agent-assist {
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;
 }
 
-/* Interaction 360 always stays visible at the bottom */
 c-aa_interaction360 {
 	flex-shrink: 0;
-}
-
-.transcript-panel {
-	position: absolute;
-	top: 0;
-	left: 24px;
-	width: calc(100% - 24px);
-	height: 100%;
-	z-index: 100;
-	background: #fff;
-	box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
-	overflow-y: auto;
-	display: flex;
-	flex-direction: column;
-}
-
-.transcript-tab-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 24px;
-	min-width: 24px;
-	height: 20%;
-	background: #fff;
-	border: 1px solid #1f85eb;
-	cursor: pointer;
-	padding: 0;
-	position: absolute;
-	left: 0;
-	top: 0;
-	transition: background 0.15s;
-	flex-shrink: 0;
-}
-
-.transcript-tab-btn:hover {
-	background: #f2f2f2;
-}
-
-.tab-label {
-	writing-mode: vertical-rl;
-	text-orientation: mixed;
-	transform: rotate(180deg);
-	font-size: 11px;
-	font-weight: 600;
-	color: #1f85eb;
-	letter-spacing: 0.8px;
-	text-transform: uppercase;
-	user-select: none;
 }
 
 .permissioncontainer {
