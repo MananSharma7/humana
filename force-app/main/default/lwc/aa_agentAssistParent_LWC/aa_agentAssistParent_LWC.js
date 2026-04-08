@@ -132,8 +132,16 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.errorMessage = message;
 	}
 
+	@track isPopoutMode = false;
+
+	get outerContainerClass() {
+		return (this.isPopoutMode && this.showTranscript) ? 'outer-container popout-split' : 'outer-container';
+	}
+
 	async connectedCallback() {
 		console.log('connectedCallback before setupWebSocketIoClient');
+
+		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
 
 		if (!this.recordId) {
 			const storedId = localStorage.getItem('agentAssistVoiceCallId');
@@ -905,6 +913,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	handleToggleTranscript() {
 		this.showTranscript = !this.showTranscript;
+		if (this.isPopoutMode) {
+			try {
+				if (this.showTranscript) {
+					window.resizeBy(450, 0);
+				} else {
+					window.resizeBy(-450, 0);
+				}
+			} catch(e) {
+				console.error('Failed to resize window: ', e);
+			}
+		}
 	}
 
 	scrollToUtilityBarBottom() {
