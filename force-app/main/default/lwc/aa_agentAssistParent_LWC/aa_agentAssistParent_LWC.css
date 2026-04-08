@@ -64,6 +64,58 @@ c-aa_interaction360 {
 	--slds-c-icon-color-foreground-default: #fafafa;
 }
 
+.transcript-panel {
+	position: absolute;
+	top: 0;
+	left: 24px;
+	width: calc(100% - 24px);
+	height: 100%;
+	z-index: 100;
+	background: #fff;
+	box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.transcript-tab-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	min-width: 24px;
+	height: 120px;
+	background: #fff;
+	border: 1px solid #1f85eb;
+	border-left: none;
+	border-radius: 0 4px 4px 0;
+	cursor: pointer;
+	padding: 0;
+	position: absolute;
+	left: 0;
+	top: 40%;
+	transition: background 0.15s;
+	flex-shrink: 0;
+	z-index: 101;
+	box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.transcript-tab-btn:hover {
+	background: #f2f2f2;
+}
+
+.tab-label {
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+	transform: rotate(180deg);
+	font-size: 11px;
+	font-weight: 600;
+	color: #1f85eb;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	user-select: none;
+}
+
 /* Split Layout for Pop-out Mode */
 .outer-container.popout-split {
 	display: flex;

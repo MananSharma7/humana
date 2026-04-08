@@ -163,6 +163,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
+		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
 		this.updateStatus('default');
 		if (!this.recordId) {
 			const storedId = localStorage.getItem('agentAssistVoiceCallId');

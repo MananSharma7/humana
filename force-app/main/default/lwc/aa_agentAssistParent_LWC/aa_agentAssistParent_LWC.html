@@ -47,7 +47,26 @@
 				<p class="slds-p-around_xx-small">Loading Agent Assist...</p>
 			</template>
 			<template if:false={isLoading}>
-				<div class="outer-container">
+				<div class={outerContainerClass}>
+					<!-- Vertical transcript tab button (always visible) -->
+					<template if:true={isPopoutMode}>
+						<button
+							class="transcript-tab-btn"
+							onclick={handleToggleTranscript}
+							title="Toggle Live Transcript"
+							aria-label="Toggle Live Transcript"
+							aria-pressed={showTranscript}
+						>
+							<span class="tab-label">Transcript</span>
+						</button>
+					</template>
+
+					<!-- Live Transcript Panel (overlays main panels) -->
+					<template if:true={showTranscript}>
+						<div class="transcript-panel">
+							<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
+						</div>
+					</template>
 					<!-- Main Panels -->
 					<div class="main-panels">
 						<c-aa_knowledge-agent-assist record-id={recordId}></c-aa_knowledge-agent-assist>
