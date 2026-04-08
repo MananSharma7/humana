@@ -3,11 +3,40 @@
 	height: 100%;
 }
 
+.outer-container {
+	display: flex;
+	flex-direction: row;
+	height: 100%;
+	max-height: 100vh;
+	overflow: hidden;
+	position: relative;
+}
+
 .container {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	max-height: 100vh;
+}
+
+.main-panels {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow: hidden;
+	/* padding-left: 24px; */
+}
+
+c-aa_knowledge-agent-assist {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+c-aa_interaction360 {
+	flex-shrink: 0;
 }
 
 .permissioncontainer {
