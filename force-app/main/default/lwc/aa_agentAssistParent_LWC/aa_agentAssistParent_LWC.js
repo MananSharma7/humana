@@ -17,7 +17,7 @@ import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getR
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
 import PROXY_CHANNEL from '@salesforce/messageChannel/AgentAssistLWCMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
-import { EnclosingUtilityId, updateUtility } from 'lightning/platformUtilityBarApi';
+import { EnclosingUtilityId, updateUtility, open } from 'lightning/platformUtilityBarApi';
 import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_SSO';
 import { AgentAssist_Labels, AuthErrorClass } from './layoutConfig';
 import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSOAccessToken';
@@ -501,7 +501,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	async sendInteractionContext(interactionDetails) {
-		console.log('agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails));
+		console.log(
+			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails)
+		);
 		try {
 			this.voiceCallId = interactionDetails.Voice_Call__c;
 			this.recordId = interactionDetails.Voice_Call__c;
@@ -518,6 +520,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.userSalesforceId
 					)
 				);
+				this.handleOpenAAUtility();
 			} else {
 				this.websocket.emitEvent(
 					AgentAssistLabels.SET_INTERACTION_CONTEXT,
@@ -529,6 +532,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.userSalesforceId
 					)
 				);
+				this.handleOpenAAUtility();
 			}
 			LWCLogger({
 				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
@@ -1157,5 +1161,14 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	sanitize(str) {
 		// Only allow alphabets and spaces
 		return str.replace(/[^a-z\s]/gi, '');
+	}
+
+	async handleOpenAAUtility() {
+		//Use to open AA utility Automatically
+
+		if (!this.utilityId) {
+			return;
+		}
+		await open(this.utilityId, { autoFocus: true });
 	}
 }
