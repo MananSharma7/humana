@@ -7,8 +7,7 @@
 .transcript-panel {
 	display: flex;
 	flex-direction: column;
-	width: 340px;
-	min-width: 340px;
+	width: 100%;
 	height: 100%;
 	background: #ffffff;
 	border-right: 1px solid #e0e0e0;
@@ -199,7 +198,7 @@
 .lt-msg-wrap {
 	display: flex;
 	flex-direction: column;
-	max-width: 90%;
+	width: 100%;
 	animation: fadeInUp 0.25s ease;
 }
 
@@ -215,8 +214,8 @@
 }
 
 .lt-agent-wrap {
-	align-self: flex-end;
-	align-items: flex-end;
+	align-self: flex-start;
+	align-items: flex-start;
 }
 
 .lt-caller-wrap {
@@ -228,48 +227,42 @@
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	margin-bottom: 3px;
+	margin-bottom: 2px;
 }
 
 .lt-role {
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 700;
-	letter-spacing: 0.6px;
 	text-transform: uppercase;
 }
 
 .lt-role-agent {
-	color: #0b5cab;
+	color: #181818;
 }
 
 .lt-role-caller {
-	color: #5a5a5a;
+	color: #0070d2;
 }
 
 .lt-time {
-	font-size: 10px;
+	font-size: 9px;
 	color: #aaa;
 }
 
 .lt-bubble {
-	padding: 8px 12px;
-	border-radius: 12px;
+	padding: 2px 0 10px 0;
 	font-size: 13px;
 	line-height: 1.5;
 	word-break: break-word;
-	max-width: 100%;
+	width: 100%;
 }
 
 .lt-bubble-agent {
-	background: #dbeafe;
-	color: #1e3a5f;
-	border-bottom-right-radius: 3px;
+	color: #333333;
 }
 
 .lt-bubble-caller {
-	background: #f0f0f0;
 	color: #333333;
-	border-bottom-left-radius: 3px;
 }
 
 .lt-msg-text {

@@ -54,7 +54,28 @@
 			</div>
 		</template>
 
-		<div class="transcript-body" data-id="transcript-body" lwc:ref="transcriptBody"></div>
+		<div class="transcript-body" data-id="transcript-body" lwc:ref="transcriptBody">
+			<template for:each={transcriptMessages} for:item="msg">
+				<div key={msg.id} class={msg.wrapClass}>
+					<div class="lt-meta">
+						<span class={msg.roleClass}>{msg.roleLabel}</span>
+						<span class="lt-time">{msg.timeLabel}</span>
+					</div>
+					<div class={msg.bubbleClass}>
+						<span class="lt-msg-text">
+							<template for:each={msg.contentSegments} for:item="seg">
+								<template if:true={seg.isMatch}>
+									<mark key={seg.id} class={seg.markClass} data-match={seg.matchId}>{seg.text}</mark>
+								</template>
+								<template if:false={seg.isMatch}>
+									{seg.text}
+								</template>
+							</template>
+						</span>
+					</div>
+				</div>
+			</template>
+		</div>
 		<div class="transcript-footer">
 			<template lwc:if={isLive}>
 				<span class="footer-live-indicator">

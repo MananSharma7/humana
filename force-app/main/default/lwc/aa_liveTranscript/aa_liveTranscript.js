@@ -1,170 +1,7 @@
-import { LightningElement, track } from 'lwc';
-
-const MOCK_CHUNKS = [
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-001',
-			participant_role: 'AGENT',
-			content: 'Hello! Thank you for calling Humana. My name is Sarah, how can I help you today?',
-			send_time: new Date(Date.now() - 600000).toISOString(),
-			sentiment_analysis: { score: 0.8, magnitude: 0.6 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-002',
-			participant_role: 'END_USER',
-			content: 'Hi Sarah, I have a question about my Medicare and Medicaid coverage.',
-			send_time: new Date(Date.now() - 540000).toISOString(),
-			sentiment_analysis: { score: 0.3, magnitude: 0.4 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-001',
-			participant_role: 'AGENT',
-			content:
-				"Of course! I'd be happy to help. Are you currently enrolled in both Medicare and Medicaid, dual eligible?",
-			send_time: new Date(Date.now() - 480000).toISOString(),
-			sentiment_analysis: { score: 0.7, magnitude: 0.5 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-002',
-			participant_role: 'END_USER',
-			content: "I know I have Medicare for sure. I'm not completely sure about Medicaid though.",
-			send_time: new Date(Date.now() - 420000).toISOString(),
-			sentiment_analysis: { score: 0.2, magnitude: 0.3 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-001',
-			participant_role: 'AGENT',
-			content:
-				"No problem at all. Sometimes people who qualify for Medicaid also receive what's called Low Income Subsidy or 'Extra Help' with their prescription costs. Do you know if you're receiving that?",
-			send_time: new Date(Date.now() - 360000).toISOString(),
-			sentiment_analysis: { score: 0.6, magnitude: 0.7 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-002',
-			participant_role: 'END_USER',
-			content: "Yes, I do get some kind of help with my prescriptions — I think it's called Extra Help.",
-			send_time: new Date(Date.now() - 300000).toISOString(),
-			sentiment_analysis: { score: 0.5, magnitude: 0.4 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-001',
-			participant_role: 'AGENT',
-			content:
-				"That's great to hear! That typically means you may be eligible for Medicaid as well. I'll go ahead and mark you as likely dual eligible.",
-			send_time: new Date(Date.now() - 240000).toISOString(),
-			sentiment_analysis: { score: 0.8, magnitude: 0.6 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-002',
-			participant_role: 'END_USER',
-			content: 'Perfect, thank you for explaining that.',
-			send_time: new Date(Date.now() - 180000).toISOString(),
-			sentiment_analysis: { score: 0.7, magnitude: 0.3 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-001',
-			participant_role: 'AGENT',
-			content: 'Is there anything else I may assist you with today?',
-			send_time: new Date(Date.now() - 120000).toISOString(),
-			sentiment_analysis: { score: 0.8, magnitude: 0.4 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-	{
-		version: '1.0',
-		event_type: 'live_transcription',
-		data: {
-			conversation_id: 'mock-conv-001',
-			member_id: 'mem-002',
-			participant_role: 'END_USER',
-			content:
-				"Yes, can you also help me with my prescription refill status? It's been over a week since it was supposed to be filled.",
-			send_time: new Date(Date.now() - 60000).toISOString(),
-			sentiment_analysis: { score: 0.1, magnitude: 0.6 },
-			language_code: 'en-US',
-			create_date: new Date().toISOString()
-		},
-		error: null
-	},
-
-	{
-		error: {
-			error_status: 'true',
-			code: 'AA-LT-500',
-			message: 'WebSocket connection lost unexpectedly',
-			user_message: 'Live transcription is not available at this time. Please try again later.'
-		}
-	}
-];
+import { LightningElement, track, wire } from 'lwc';
+import { subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
+import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
+import { AgentAssistLabels } from 'c/aa_UtilsHum';
 
 function formatTime(isoString) {
 	try {
@@ -185,39 +22,51 @@ export default class Aa_liveTranscript extends LightningElement {
 	@track errorMessage = '';
 	@track searchTerm = '';
 	@track matchLabel = '0/0';
+	@track transcriptMessages = [];
 
-	_chunkIndex = 0;
-	_streamInterval = null;
 	_searchDebounceTimer = null;
-	_matchNodes = [];
+	_matchCount = 0;
 	_matchIndex = -1;
+	subscription = null;
+
+	@wire(MessageContext)
+	messageContext;
 
 	connectedCallback() {
-		this._streamInterval = window.setInterval(() => {
-			this._deliverNextChunk();
-		}, 1400);
+		this.subscribeToMessageChannel();
 	}
 
 	disconnectedCallback() {
-		this._stopStream();
+		this.unsubscribeToMessageChannel();
 	}
 
-	_stopStream() {
-		if (this._streamInterval) {
-			window.clearInterval(this._streamInterval);
-			this._streamInterval = null;
+	subscribeToMessageChannel() {
+		if (!this.subscription) {
+			this.subscription = subscribe(
+				this.messageContext,
+				VOICE_CALL_CHANNEL,
+				(message) => this.handleMessage(message),
+				{ scope: APPLICATION_SCOPE }
+			);
 		}
 	}
 
-	_deliverNextChunk() {
-		if (this._chunkIndex >= MOCK_CHUNKS.length) {
-			this._stopStream();
+	unsubscribeToMessageChannel() {
+		if (this.subscription) {
+			unsubscribe(this.subscription);
+			this.subscription = null;
+		}
+	}
+
+	handleMessage(message) {
+		console.log('Message => ' + JSON.stringify(message, null, 2));
+		if (message && message.type === AgentAssistLabels.LIVE_TRANSCRIPTION && message.data) {
+			this._processChunk(message.data);
+		} else if (message && message.type === AgentAssistLabels.CONNECTION_END) {
 			this.isLive = false;
-			return;
+		} else if (message && message.type === AgentAssistLabels.ERROR) {
+			// Optional for error messages
 		}
-
-		const chunk = MOCK_CHUNKS[this._chunkIndex++];
-		this._processChunk(chunk);
 	}
 
 	processChunk(chunk) {
@@ -225,58 +74,42 @@ export default class Aa_liveTranscript extends LightningElement {
 	}
 
 	_processChunk(chunk) {
-		if (chunk.error && chunk.error.error_status) {
-			this._stopStream();
+		if (chunk && chunk.error && String(chunk.error.error_status).toLowerCase() === 'true') {
+			this.unsubscribeToMessageChannel();
 			this.isLive = false;
 			this.hasError = true;
 			this.errorMessage = chunk.error.user_message || 'An error occurred during live transcription.';
 			return;
 		}
 
+		if (!chunk || !chunk.data) return;
 		const { participant_role, content, send_time } = chunk.data;
-		const isAgent = participant_role === 'AGENT';
+		const isAgent = participant_role === 'HUMAN_AGENT' || participant_role === 'AGENT';
 
-		const node = this._buildMessageNode(isAgent, participant_role, content, send_time);
+		const rawContent = content || '';
+		const newMsg = {
+			id: Date.now().toString() + Math.random().toString(),
+			rawContent: rawContent,
+			contentSegments: [{ id: 'seg0', text: rawContent, isMatch: false, markClass: '', matchId: null }],
+			wrapClass: isAgent ? 'lt-msg-wrap lt-agent-wrap' : 'lt-msg-wrap lt-caller-wrap',
+			roleClass: isAgent ? 'lt-role lt-role-agent' : 'lt-role lt-role-caller',
+			roleLabel: isAgent ? 'ADVOCATE' : 'CALLER',
+			timeLabel: formatTime(send_time),
+			bubbleClass: isAgent ? 'lt-bubble lt-bubble-agent' : 'lt-bubble lt-bubble-caller'
+		};
 
-		const body = this.template.querySelector('[data-id="transcript-body"]');
-		if (body) {
-			body.appendChild(node);
+		this.transcriptMessages.push(newMsg);
 
-			body.scrollTop = body.scrollHeight;
+		if (this.searchTerm && this.searchTerm.trim().length > 0) {
+			this._applyHighlights(this.searchTerm.trim());
 		}
 
-		if (this.searchTerm) {
-			this._applyHighlights(this.searchTerm);
-		}
-	}
-
-	_buildMessageNode(isAgent, role, content, sendTime) {
-		const wrap = document.createElement('div');
-		wrap.className = isAgent ? 'lt-msg-wrap lt-agent-wrap' : 'lt-msg-wrap lt-caller-wrap';
-
-		const meta = document.createElement('div');
-		meta.className = 'lt-meta';
-		const labelSpan = document.createElement('span');
-		labelSpan.className = isAgent ? 'lt-role lt-role-agent' : 'lt-role lt-role-caller';
-		labelSpan.textContent = isAgent ? 'AGENT' : 'CALLER';
-		const timeSpan = document.createElement('span');
-		timeSpan.className = 'lt-time';
-		timeSpan.textContent = formatTime(sendTime);
-		meta.appendChild(labelSpan);
-		meta.appendChild(timeSpan);
-
-		const bubble = document.createElement('div');
-		bubble.className = isAgent ? 'lt-bubble lt-bubble-agent' : 'lt-bubble lt-bubble-caller';
-
-		const textSpan = document.createElement('span');
-		textSpan.className = 'lt-msg-text';
-		textSpan.textContent = content;
-
-		bubble.appendChild(textSpan);
-		wrap.appendChild(meta);
-		wrap.appendChild(bubble);
-
-		return wrap;
+		setTimeout(() => {
+			const body = this.template.querySelector('[data-id="transcript-body"]');
+			if (body) {
+				body.scrollTop = body.scrollHeight;
+			}
+		}, 0);
 	}
 
 	handleSearchInput(e) {
@@ -285,11 +118,10 @@ export default class Aa_liveTranscript extends LightningElement {
 
 		window.clearTimeout(this._searchDebounceTimer);
 		this._searchDebounceTimer = window.setTimeout(() => {
-			this._clearHighlights();
 			if (term && term.trim().length > 0) {
 				this._applyHighlights(term.trim());
 			} else {
-				this.matchLabel = '0/0';
+				this._clearHighlights();
 			}
 		}, 200);
 	}
@@ -297,79 +129,89 @@ export default class Aa_liveTranscript extends LightningElement {
 	clearSearch() {
 		this.searchTerm = '';
 		this._clearHighlights();
-		this.matchLabel = '0/0';
 	}
 
 	handleNext() {
-		if (!this._matchNodes.length) return;
+		if (this._matchCount === 0) return;
 		this._setActive(this._matchIndex + 1);
 	}
 
 	handlePrev() {
-		if (!this._matchNodes.length) return;
+		if (this._matchCount === 0) return;
 		this._setActive(this._matchIndex - 1);
 	}
 
 	_setActive(idx) {
-		const total = this._matchNodes.length;
-		if (!total) return;
-
-		const newIdx = ((idx % total) + total) % total;
-
-		if (this._matchIndex >= 0 && this._matchIndex < this._matchNodes.length) {
-			this._matchNodes[this._matchIndex].className = 'lt-highlight';
-		}
-
+		if (this._matchCount === 0) return;
+		const newIdx = ((idx % this._matchCount) + this._matchCount) % this._matchCount;
 		this._matchIndex = newIdx;
-		const activeNode = this._matchNodes[newIdx];
-		activeNode.className = 'lt-highlight lt-highlight-active';
-		activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-		this.matchLabel = `${newIdx + 1}/${total}`;
+		this.transcriptMessages = this.transcriptMessages.map((msg) => {
+			let changed = false;
+			const newSegs = msg.contentSegments.map((seg) => {
+				if (seg.isMatch) {
+					const active = seg.matchId === newIdx;
+					const newClass = active ? 'lt-highlight lt-highlight-active' : 'lt-highlight';
+					if (seg.markClass !== newClass) {
+						changed = true;
+						return { ...seg, markClass: newClass };
+					}
+				}
+				return seg;
+			});
+			return changed ? { ...msg, contentSegments: newSegs } : msg;
+		});
+
+		this.matchLabel = `${newIdx + 1}/${this._matchCount}`;
+
+		setTimeout(() => {
+			const activeMark = this.template.querySelector('mark.lt-highlight-active');
+			if (activeMark) activeMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}, 0);
 	}
 
 	_applyHighlights(term) {
-		this._clearHighlights();
-		const body = this.template.querySelector('[data-id="transcript-body"]');
-		if (!body || !term) return;
+		if (!term) {
+			this._clearHighlights();
+			return;
+		}
 
-		const textSpans = body.querySelectorAll('.lt-msg-text');
-		const marks = [];
 		const regex = new RegExp(`(${this._escapeRegex(term)})`, 'gi');
+		let matchCount = 0;
 
-		textSpans.forEach((span) => {
-			const textNodes = this._getTextNodes(span);
+		this.transcriptMessages = this.transcriptMessages.map((msg) => {
+			const parts = msg.rawContent.split(regex);
+			if (parts.length <= 1) {
+				return { ...msg, contentSegments: [{ id: msg.id + '0', text: msg.rawContent, isMatch: false }] };
+			}
 
-			textNodes.forEach((textNode) => {
-				const text = textNode.nodeValue;
-				if (!text) return;
-
-				const parts = text.split(regex);
-				if (parts.length <= 1) return;
-
-				const frag = document.createDocumentFragment();
-				parts.forEach((part) => {
-					if (regex.test(part)) {
-						const mark = document.createElement('mark');
-						mark.className = 'lt-highlight';
-						mark.textContent = part;
-						marks.push(mark);
-						frag.appendChild(mark);
-					} else {
-						frag.appendChild(document.createTextNode(part));
-					}
-					regex.lastIndex = 0;
+			const segments = [];
+			parts.forEach((part, idx) => {
+				if (!part) return;
+				const isMatch = regex.test(part);
+				regex.lastIndex = 0;
+				let mId = null;
+				let markCls = '';
+				if (isMatch) {
+					mId = matchCount++;
+					markCls = 'lt-highlight';
+				}
+				segments.push({
+					id: msg.id + '_' + idx,
+					text: part,
+					isMatch: isMatch,
+					matchId: mId,
+					markClass: markCls
 				});
-
-				textNode.parentNode.replaceChild(frag, textNode);
 			});
+			return { ...msg, contentSegments: segments };
 		});
 
-		this._matchNodes = marks;
+		this._matchCount = matchCount;
 		this._matchIndex = -1;
 
-		if (marks.length > 0) {
-			this.matchLabel = `1/${marks.length}`;
+		if (this._matchCount > 0) {
+			this.matchLabel = `1/${this._matchCount}`;
 			this._setActive(0);
 		} else {
 			this.matchLabel = `0/0`;
@@ -377,28 +219,13 @@ export default class Aa_liveTranscript extends LightningElement {
 	}
 
 	_clearHighlights() {
-		const body = this.template.querySelector('[data-id="transcript-body"]');
-		if (!body) return;
-
-		const marks = body.querySelectorAll('mark.lt-highlight');
-		marks.forEach((mark) => {
-			const parent = mark.parentNode;
-			parent.replaceChild(document.createTextNode(mark.textContent), mark);
-			parent.normalize();
-		});
-
-		this._matchNodes = [];
+		this.transcriptMessages = this.transcriptMessages.map((msg) => ({
+			...msg,
+			contentSegments: [{ id: msg.id + '0', text: msg.rawContent, isMatch: false, markClass: '', matchId: null }]
+		}));
+		this._matchCount = 0;
 		this._matchIndex = -1;
-	}
-
-	_getTextNodes(el) {
-		const nodes = [];
-		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
-		let node;
-		while ((node = walker.nextNode())) {
-			nodes.push(node);
-		}
-		return nodes;
+		this.matchLabel = '0/0';
 	}
 
 	_escapeRegex(str) {

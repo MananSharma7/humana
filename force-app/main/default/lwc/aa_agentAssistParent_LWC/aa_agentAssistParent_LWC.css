@@ -64,6 +64,10 @@ c-aa_interaction360 {
 	--slds-c-icon-color-foreground-default: #fafafa;
 }
 
+.custom-icon-display_text {
+	--slds-c-icon-color-foreground-default: #4285f4;
+}
+
 .transcript-panel {
 	position: absolute;
 	top: 0;
@@ -80,6 +84,8 @@ c-aa_interaction360 {
 
 .transcript-tab-btn {
 	display: flex;
+	flex-direction: column;
+	gap: 6px;
 	align-items: center;
 	justify-content: center;
 	width: 24px;
@@ -93,11 +99,11 @@ c-aa_interaction360 {
 	padding: 0;
 	position: absolute;
 	left: 0;
-	top: 40%;
+	top: 0;
 	transition: background 0.15s;
 	flex-shrink: 0;
 	z-index: 101;
-	box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .transcript-tab-btn:hover {
