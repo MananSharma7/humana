@@ -192,7 +192,14 @@
 }
 
 .footer-ended {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 	color: #888;
+}
+
+.footer-ended-icon {
+	--slds-c-icon-color-foreground-default: #888;
 }
 
 .lt-msg-wrap {

@@ -62,7 +62,10 @@ export default class Aa_liveTranscript extends LightningElement {
 		console.log('Message => ' + JSON.stringify(message, null, 2));
 		if (message && message.type === AgentAssistLabels.LIVE_TRANSCRIPTION && message.data) {
 			this._processChunk(message.data);
-		} else if (message && message.type === AgentAssistLabels.CONNECTION_END) {
+		} else if (
+			message &&
+			(message.type === AgentAssistLabels.CONNECTION_END || message.type === AgentAssistLabels.POST_CALL_SUMMARY)
+		) {
 			this.isLive = false;
 		} else if (message && message.type === AgentAssistLabels.ERROR) {
 			// Optional for error messages

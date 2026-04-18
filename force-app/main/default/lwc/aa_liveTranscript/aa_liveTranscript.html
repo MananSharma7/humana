@@ -67,9 +67,7 @@
 								<template if:true={seg.isMatch}>
 									<mark key={seg.id} class={seg.markClass} data-match={seg.matchId}>{seg.text}</mark>
 								</template>
-								<template if:false={seg.isMatch}>
-									{seg.text}
-								</template>
+								<template if:false={seg.isMatch}> {seg.text} </template>
 							</template>
 						</span>
 					</div>
@@ -84,7 +82,16 @@
 				</span>
 			</template>
 			<template lwc:else>
-				<span class="footer-ended">&#9832; Call ended</span>
+				<span class="footer-ended">
+					<lightning-icon
+						icon-name="utility:end_call"
+						alternative-text="end_call"
+						size="x-small"
+						title="end_call"
+						class="footer-ended-icon"
+					></lightning-icon>
+					Call ended
+				</span>
 			</template>
 		</div>
 	</div>
