@@ -161,6 +161,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		return this.isPopoutMode && this.showTranscript ? 'outer-container popout-split' : 'outer-container';
 	}
 
+	get transcriptPanelClass() {
+		return this.showTranscript ? 'transcript-panel' : 'transcript-panel transcript-panel-hidden';
+	}
+
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
 		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
@@ -747,6 +751,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.userSalesforceId
 					)
 				);
+
+				// Notify children to reset state for new interaction
+				publish(this.messageContext, VOICE_CALL_CHANNEL, {
+					type: AgentAssistLabels.UPDATE_INTERACTION,
+					data: { genesysInteractionId: this.genesysInteractionId }
+				});
+
 				this.handleOpenAAUtility();
 			} else {
 				this.websocket.emitEvent(
@@ -759,6 +770,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.userSalesforceId
 					)
 				);
+
+				// Notify children to reset state for new interaction
+				publish(this.messageContext, VOICE_CALL_CHANNEL, {
+					type: AgentAssistLabels.UPDATE_INTERACTION,
+					data: { genesysInteractionId: this.genesysInteractionId }
+				});
+
 				this.handleOpenAAUtility();
 			}
 			LWCLogger({

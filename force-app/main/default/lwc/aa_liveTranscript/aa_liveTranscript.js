@@ -67,9 +67,32 @@ export default class Aa_liveTranscript extends LightningElement {
 			(message.type === AgentAssistLabels.CONNECTION_END || message.type === AgentAssistLabels.POST_CALL_SUMMARY)
 		) {
 			this.isLive = false;
+		} else if (message && message.type === AgentAssistLabels.UPDATE_INTERACTION) {
+			// New interaction started — clear previous transcription data
+			console.log('aa_liveTranscript | handleMessage | UPDATE_INTERACTION received. Clearing previous transcript.');
+			this._resetTranscriptState();
+		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
+			// Call ended — clear transcription data so it doesn't persist to the next call
+			console.log('aa_liveTranscript | handleMessage | END_INTERACTION received. Clearing transcript.');
+			this._resetTranscriptState();
 		} else if (message && message.type === AgentAssistLabels.ERROR) {
 			// Optional for error messages
 		}
+	}
+
+	/**
+	 * Resets all transcript state to prepare for a new call.
+	 * Clears messages, search highlights, and error flags, and re-marks the transcript as live.
+	 */
+	_resetTranscriptState() {
+		this.transcriptMessages = [];
+		this.searchTerm = '';
+		this.matchLabel = '0/0';
+		this._matchCount = 0;
+		this._matchIndex = -1;
+		this.isLive = true;
+		this.hasError = false;
+		this.errorMessage = '';
 	}
 
 	processChunk(chunk) {

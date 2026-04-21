@@ -66,12 +66,10 @@
 						</button>
 					</template>
 
-					<!-- Live Transcript Panel (overlays main panels) -->
-					<template if:true={showTranscript}>
-						<div class="transcript-panel">
-							<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
-						</div>
-					</template>
+					<!-- Live Transcript Panel (overlays main panels) — kept in DOM to preserve state -->
+					<div class={transcriptPanelClass}>
+						<c-aa_live-transcript ontoggletranscript={handleToggleTranscript}> </c-aa_live-transcript>
+					</div>
 					<!-- Main Panels -->
 					<div class="main-panels">
 						<c-aa_knowledge-agent-assist record-id={recordId}></c-aa_knowledge-agent-assist>

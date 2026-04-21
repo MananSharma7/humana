@@ -82,6 +82,10 @@ c-aa_interaction360 {
 	flex-direction: column;
 }
 
+.transcript-panel-hidden {
+	display: none;
+}
+
 .transcript-tab-btn {
 	display: flex;
 	flex-direction: column;
