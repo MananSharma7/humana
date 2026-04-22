@@ -22,7 +22,6 @@ import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agen
 import { AgentAssist_Labels, AuthErrorClass } from './layoutConfig';
 import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSOAccessToken';
 import getAzureCallout from '@salesforce/apex/AA_AzureOAuthGraphCallout.getAzureCallout';
-
 import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAccess';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 
@@ -361,7 +360,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			switch (message.type) {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | set_interaction_context');
-
 					this.sendInteractionContext(message.data);
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
@@ -758,7 +756,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					data: { genesysInteractionId: this.genesysInteractionId }
 				});
 
-				this.handleOpenAAUtility();
+				if (interactionDetails.Call_Disposition__c !== 'completed') {
+					this.handleOpenAAUtility();
+				}
 			} else {
 				this.websocket.emitEvent(
 					AgentAssistLabels.SET_INTERACTION_CONTEXT,
@@ -777,7 +777,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					data: { genesysInteractionId: this.genesysInteractionId }
 				});
 
-				this.handleOpenAAUtility();
+				if (interactionDetails.Call_Disposition__c !== 'completed') {
+					this.handleOpenAAUtility();
+				}
 			}
 			LWCLogger({
 				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
