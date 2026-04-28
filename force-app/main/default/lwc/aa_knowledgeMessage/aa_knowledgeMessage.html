@@ -21,6 +21,7 @@
 					<div
 						data-is-loading={card.isLoading}
 						data-is-abandoned={card.isAbandoned}
+						data-is-pinned={card.isPinned}
 						key={card.card_id}
 						data-card-id={card.card_id}
 						class="card"
@@ -76,6 +77,30 @@
 								</template>
 								<h1 class="slds-text-heading_small"><strong>{card.header}</strong></h1>
 								<div class="card-actions">
+									<template if:true={card.isKnowledgeCard}>
+										<template if:true={card.isPinned}>
+											<lightning-icon
+												icon-name="utility:pinned"
+												alternative-text="pinned"
+												size="x-small"
+												title="pinned"
+												onclick={togglePin}
+												data-id={card.card_id}
+												class="action-icon pinned-icon"
+											></lightning-icon>
+										</template>
+										<template if:false={card.isPinned}>
+											<lightning-icon
+												icon-name="utility:pin"
+												alternative-text="pin"
+												size="x-small"
+												title="pin"
+												onclick={togglePin}
+												data-id={card.card_id}
+												class="action-icon unpinned-icon"
+											></lightning-icon>
+										</template>
+									</template>
 									<template if:true={card.isMinimized}>
 										<lightning-icon
 											icon-name="utility:chevronright"

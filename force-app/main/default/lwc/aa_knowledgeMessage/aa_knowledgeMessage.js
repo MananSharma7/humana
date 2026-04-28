@@ -74,9 +74,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				this.cards = this.cards.map((card) => {
 					if (!card) return card;
 					const isMinimized = !!card.isMinimized;
+					const isPinned = !!card.isPinned;
+					const isKnowledgeCard = card.isKnowledgeCard !== undefined ? card.isKnowledgeCard : (!card.card_AMA && !card.isSummary);
 					return {
 						...card,
 						isMinimized: isMinimized,
+						isPinned: isPinned,
+						isKnowledgeCard: isKnowledgeCard,
 						contentClass: isMinimized ? 'card-content-collapsible minimized' : 'card-content-collapsible'
 					};
 				});
@@ -252,6 +256,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				card_AMA: true,
+				isKnowledgeCard: false,
 				consumer_name: content?.caller_name || '',
 				reply: '',
 				replyContext,
@@ -277,8 +282,11 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('existingIndex =>' + existingIndex);
 
 			if (existingIndex !== -1) {
+				const prevCard = this.cards[existingIndex];
+				card.isPinned = prevCard.isPinned;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
+				card.isPinned = false;
 				this.cards = [...this.cards, card];
 			}
 			this.saveState();
@@ -291,6 +299,17 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('Error => ' + error.stack);
 			this.showError('We are unable to retrieve suggestions at this time');
 		}
+	}
+
+	togglePin(event) {
+		const cardId = event.target.dataset.id;
+		this.cards = this.cards.map((card) => {
+			if (card.card_id === cardId) {
+				return { ...card, isPinned: !card.isPinned };
+			}
+			return { ...card, isPinned: false };
+		});
+		this.saveState();
 	}
 
 	toggleMinimize(event) {
@@ -400,6 +419,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				card_AMA: false,
+				isKnowledgeCard: true,
 				reply: '',
 				header: content?.header || '',
 				sub_heading: content?.body?.[0]?.sub_heading?.text || '',
@@ -424,8 +444,11 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('existingIndex =>' + existingIndex);
 
 			if (existingIndex !== -1) {
+				const prevCard = this.cards[existingIndex];
+				card.isPinned = prevCard.isPinned;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
+				card.isPinned = false;
 				this.cards = [...this.cards, card];
 			}
 			this.saveState();
@@ -470,6 +493,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isSummary: true,
 				isSumError,
 				card_AMA: false,
+				isKnowledgeCard: false,
 				reply: '',
 				header: 'Summary: ' + summaryTitle || '',
 				sub_heading: '',
@@ -492,8 +516,11 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			const existingIndex = this.cards.findIndex((c) => c.card_id === card.card_id);
 
 			if (existingIndex !== -1) {
+				const prevCard = this.cards[existingIndex];
+				card.isPinned = prevCard.isPinned;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
+				card.isPinned = false;
 				this.cards = [...this.cards, card];
 			}
 			this.saveState();
