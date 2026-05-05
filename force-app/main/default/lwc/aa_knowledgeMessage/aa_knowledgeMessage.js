@@ -75,12 +75,12 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					if (!card) return card;
 					const isMinimized = !!card.isMinimized;
 					const isPinned = !!card.isPinned;
-					const isKnowledgeCard = card.isKnowledgeCard !== undefined ? card.isKnowledgeCard : (!card.card_AMA && !card.isSummary);
+					const isPinnable = card.isPinnable !== undefined ? card.isPinnable : !card.isSummary;
 					return {
 						...card,
 						isMinimized: isMinimized,
 						isPinned: isPinned,
-						isKnowledgeCard: isKnowledgeCard,
+						isPinnable: isPinnable,
 						contentClass: isMinimized ? 'card-content-collapsible minimized' : 'card-content-collapsible'
 					};
 				});
@@ -256,7 +256,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				card_AMA: true,
-				isKnowledgeCard: false,
+				isPinnable: true,
 				consumer_name: content?.caller_name || '',
 				reply: '',
 				replyContext,
@@ -419,7 +419,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isCompleted,
 				isFooter,
 				card_AMA: false,
-				isKnowledgeCard: true,
+				isPinnable: true,
 				reply: '',
 				header: content?.header || '',
 				sub_heading: content?.body?.[0]?.sub_heading?.text || '',
@@ -493,7 +493,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isSummary: true,
 				isSumError,
 				card_AMA: false,
-				isKnowledgeCard: false,
+				isPinnable: false,
 				reply: '',
 				header: 'Summary: ' + summaryTitle || '',
 				sub_heading: '',

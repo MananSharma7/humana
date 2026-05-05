@@ -77,7 +77,7 @@
 								</template>
 								<h1 class="slds-text-heading_small"><strong>{card.header}</strong></h1>
 								<div class="card-actions">
-									<template if:true={card.isKnowledgeCard}>
+									<template if:true={card.isPinnable}>
 										<template if:true={card.isPinned}>
 											<lightning-icon
 												icon-name="utility:pinned"

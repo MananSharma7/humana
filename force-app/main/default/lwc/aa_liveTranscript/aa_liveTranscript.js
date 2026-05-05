@@ -100,19 +100,50 @@ export default class Aa_liveTranscript extends LightningElement {
 	}
 
 	_processChunk(chunk) {
+		// Handle error object per v1.0 schema
 		if (chunk && chunk.error && String(chunk.error.error_status).toLowerCase() === 'true') {
+			console.log(
+				'aa_liveTranscript | _processChunk | Error received:',
+				'code=' + chunk.error.code,
+				'impact=' + chunk.error.impact,
+				'error_bucket=' + chunk.error.error_bucket,
+				'message=' + chunk.error.message
+			);
 			this.unsubscribeToMessageChannel();
 			this.isLive = false;
 			this.hasError = true;
-			this.errorMessage = chunk.error.user_message || 'An error occurred during live transcription.';
+			this.errorMessage = chunk.error.user_message || chunk.error.message || 'An error occurred during live transcription.';
 			return;
 		}
 
 		if (!chunk || !chunk.data) return;
-		const { participant_role, content, send_time } = chunk.data;
-		const isAgent = participant_role === 'HUMAN_AGENT' || participant_role === 'AGENT';
 
+		const {
+			participant_role,
+			content,
+			send_time,
+			conversation_id,
+			sentiment_analysis,
+			Audio_duration,
+			language_code,
+			create_date
+		} = chunk.data;
+
+		const isAgent = participant_role === 'HUMAN_AGENT' || participant_role === 'AGENT';
 		const rawContent = content || '';
+
+		// Determine sentiment CSS class based on score
+		let sentimentClass = '';
+		if (sentiment_analysis && typeof sentiment_analysis.score === 'number') {
+			if (sentiment_analysis.score > 0.25) {
+				sentimentClass = 'lt-sentiment-positive';
+			} else if (sentiment_analysis.score < -0.25) {
+				sentimentClass = 'lt-sentiment-negative';
+			} else {
+				sentimentClass = 'lt-sentiment-neutral';
+			}
+		}
+
 		const newMsg = {
 			id: Date.now().toString() + Math.random().toString(),
 			rawContent: rawContent,
@@ -121,7 +152,15 @@ export default class Aa_liveTranscript extends LightningElement {
 			roleClass: isAgent ? 'lt-role lt-role-agent' : 'lt-role lt-role-caller',
 			roleLabel: isAgent ? 'ADVOCATE' : 'CALLER',
 			timeLabel: formatTime(send_time),
-			bubbleClass: isAgent ? 'lt-bubble lt-bubble-agent' : 'lt-bubble lt-bubble-caller'
+			bubbleClass: isAgent ? 'lt-bubble lt-bubble-agent' : 'lt-bubble lt-bubble-caller',
+			// v1.0 schema fields
+			conversationId: conversation_id || '',
+			sentimentScore: sentiment_analysis?.score ?? null,
+			sentimentMagnitude: sentiment_analysis?.magnitude ?? null,
+			sentimentClass: sentimentClass,
+			audioDuration: Audio_duration || '',
+			languageCode: language_code || '',
+			createDate: create_date || ''
 		};
 
 		this.transcriptMessages.push(newMsg);
