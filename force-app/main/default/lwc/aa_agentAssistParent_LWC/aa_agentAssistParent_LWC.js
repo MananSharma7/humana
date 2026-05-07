@@ -5,7 +5,7 @@ import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint
 import { publish, subscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import AgentAssistWebsocket from 'c/aa_UtilsHum';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
-import { AgentAssistLabels, AgentAssistEvents } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistEvents, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
 import MessageChannel from '@salesforce/messageChannel/mp_ConsumerSearch_MessageChannel__c';
 import USER_RECORD_ID from '@salesforce/user/Id';
 import USER_ID from '@salesforce/schema/User.Id';
@@ -24,6 +24,7 @@ import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSO
 import getAzureCallout from '@salesforce/apex/AA_AzureOAuthGraphCallout.getAzureCallout';
 import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAccess';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
+import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
@@ -689,6 +690,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			sExceptionType: 'Component Error',
 			sErrorType: 'AgentAssistError'
 		});
+		LWCLogger({
+			messageText:
+				'AuthError occurred; Salesforce User Id: ' +
+				this.userSalesforceId +
+				'User Network Id: ' +
+				this.userNetworkId +
+				'; \n' +
+				JSON.stringify(objError),
+			source: 'aa_agentAssistParentLWC',
+			level: 'error'
+		});
 	}
 
 	async initializeWebsocketAfterTokenRetrieval() {
@@ -758,6 +770,22 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
 					this.handleOpenAAUtility();
+					//splunk logging
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_logging_context(
+							'INFO',
+							'aa_agentAssistParentLWC',
+							'sendInteractionContext',
+							'AA Auto Open',
+							this.genesysInteractionId,
+							AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
+								this.voiceCallId,
+								this.genesysInteractionId
+							)
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					console.log('AA_autoOpen splunk log');
 				}
 			} else {
 				this.websocket.emitEvent(
@@ -779,6 +807,22 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
 					this.handleOpenAAUtility();
+					//splunk logging
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_logging_context(
+							'INFO',
+							'aa_agentAssistParentLWC',
+							'sendInteractionContext',
+							'AA Auto Open',
+							this.genesysInteractionId,
+							AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
+								this.voiceCallId,
+								this.genesysInteractionId
+							)
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					console.log('AA_autoOpen splunk log');
 				}
 			}
 			LWCLogger({
@@ -1048,6 +1092,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			sMethod: objError.smethod,
 			sExceptionType: 'Component Error',
 			sErrorType: 'AgentAssistError'
+		});
+		LWCLogger({
+			messageText:
+				'AuthError occurred; Salesforce User Id: ' +
+				this.userSalesforceId +
+				'User Network Id: ' +
+				this.userNetworkId +
+				'; \n' +
+				JSON.stringify(objError),
+			source: 'aa_agentAssistParentLWC',
+			level: 'error'
 		});
 	}
 
