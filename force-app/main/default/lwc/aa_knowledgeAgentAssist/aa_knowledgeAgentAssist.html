@@ -1,46 +1,44 @@
 <template>
-	<template if:true={showAgentAssist}>
-		<template if:true={isOrchestrating}>
-			<div class="orchestration-header">
-				<div class="orchestration-dot"></div>
-				<span class="orchestration-text">{orchestrationStatus}</span>
-			</div>
-		</template>
-		<div class="container">
-			<div lwc:ref="container" onscroll={handleScroll} class="card-container">
-				<template if:true={isKnowledgeCards}>
-					<c-aa_knowledge-message
-						record-id={recordId}
-						onloading={handleLoading}
-						onbottom={handleBottom}
-						is-jump-in-present-visible={isJumpInPresentVisible}
-						onreplycard={handleReplyCard}
-					></c-aa_knowledge-message>
-				</template>
-				<template if:false={showknowledge}>
-					<div class="permissioncontainer">
-						<p class="permissionaccess">
-							You do not have permission to view Knowledge Card of Agent Assist,<br />
-							please contact your Admin.
-						</p>
-					</div>
-				</template>
-			</div>
-			<template if:true={isShowAMA}>
-				<c-aa_ask-me-anything
-					reply-card={replyCard}
-					is-loading={isLoading}
-					onreplyclosed={handleReplyClosed}
-				></c-aa_ask-me-anything>
+	<template if:true={isShowAO}>
+		<div class="orchestration-header">
+			<div class="orchestration-dot"></div>
+			<span class="orchestration-text">{orchestrationStatus}</span>
+		</div>
+	</template>
+	<div class="container">
+		<div lwc:ref="container" onscroll={handleScroll} class="card-container">
+			<template if:true={isKnowledgeCards}>
+				<c-aa_knowledge-message
+					record-id={recordId}
+					onloading={handleLoading}
+					onbottom={handleBottom}
+					is-jump-in-present-visible={isJumpInPresentVisible}
+					onreplycard={handleReplyCard}
+				></c-aa_knowledge-message>
 			</template>
-			<template if:false={showAMA}>
+			<template if:false={showknowledge}>
 				<div class="permissioncontainer">
 					<p class="permissionaccess">
-						You do not have permission to view Ask Me Anything of Agent Assist.,<br />
+						You do not have permission to view Knowledge Card of Agent Assist,<br />
 						please contact your Admin.
 					</p>
 				</div>
 			</template>
 		</div>
-	</template>
+		<template if:true={isShowAMA}>
+			<c-aa_ask-me-anything
+				reply-card={replyCard}
+				is-loading={isLoading}
+				onreplyclosed={handleReplyClosed}
+			></c-aa_ask-me-anything>
+		</template>
+		<template if:false={showAMA}>
+			<div class="permissioncontainer">
+				<p class="permissionaccess">
+					You do not have permission to view Ask Me Anything of Agent Assist.,<br />
+					please contact your Admin.
+				</p>
+			</div>
+		</template>
+	</div>
 </template>

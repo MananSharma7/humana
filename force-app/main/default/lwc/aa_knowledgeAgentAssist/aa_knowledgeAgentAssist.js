@@ -4,7 +4,9 @@ import hasAMAPermission from '@salesforce/customPermission/AA_AskMeAnything';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import { subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
-import { AgentAssistLabels } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
+import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
+import userId from '@salesforce/user/Id';
 
 export default class Aa_knowledgeAgentAssist extends LightningElement {
 	showknowledge = hasknowledge;
@@ -13,13 +15,14 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	@track replyCard = {};
 	isJumpInPresentVisible = false;
 	@track isLoading = false;
-	isFeatureEnabled = false;
 	isKnowledgeCardEnabled = false;
 	isAMAEnabled = false;
+	isAOEnabled = false;
 
 	@track orchestrationStatus = '';
 	@track isOrchestrating = false;
 	subscription = null;
+	hasLogged25 = false;
 
 	@wire(MessageContext)
 	messageContext;
@@ -89,7 +92,6 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 				this.orchestrationStatus = statusText;
 				this.isOrchestrating = true;
 			} else {
-				// If no status text is provided, we can hide it or clear it
 				this.isOrchestrating = false;
 				this.orchestrationStatus = '';
 			}
@@ -98,6 +100,64 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			this.isOrchestrating = false;
 			this.orchestrationStatus = '';
 			this.saveState();
+			this.hasLogged25 = false;
+		}
+	}
+
+	@track orchestrationStatus = '';
+	@track isOrchestrating = false;
+	subscription = null;
+
+	@wire(MessageContext)
+	messageContext;
+
+	connectedCallback() {
+		this.subscribeToMessageChannel();
+		this.hasLogged25 = false;
+	}
+
+	disconnectedCallback() {
+		if (this.subscription) {
+			unsubscribe(this.subscription);
+			this.subscription = null;
+		}
+	}
+
+	subscribeToMessageChannel() {
+		if (!this.subscription) {
+			this.subscription = subscribe(
+				this.messageContext,
+				VOICE_CALL_CHANNEL,
+				(message) => this.handleMessage(message),
+				{ scope: APPLICATION_SCOPE }
+			);
+		}
+	}
+
+	handleMessage(message) {
+		if (message && message.type === AgentAssistLabels.Activity_Status_Indicator) {
+			const data = message.data?.data || message.data;
+			let statusText = '';
+			if (data && data.message) {
+				statusText = data.message;
+			} else if (data && data.content && data.content.text) {
+				statusText = data.content.text;
+			} else if (data && data.status) {
+				statusText = data.status;
+			}
+
+			if (statusText) {
+				this.orchestrationStatus = statusText;
+				this.isOrchestrating = true;
+			} else {
+				// If no status text is provided, we can hide it or clear it
+				this.isOrchestrating = false;
+				this.orchestrationStatus = '';
+			}
+		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
+			this.isOrchestrating = false;
+			this.orchestrationStatus = '';
+			this.hasLogged25 = false;
 		}
 	}
 
@@ -115,6 +175,34 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			this.isJumpInPresentVisible = false;
 		} else {
 			this.isJumpInPresentVisible = true;
+		}
+
+		//  Calculate scroll percentage
+		const scrollableHeight = scrollHeight - clientHeight;
+		const scrollPercent = (scrollTop / scrollableHeight) * 100;
+
+		//  Log ONLY ONCE per interaction
+		if (scrollPercent >= 20 && !this.hasLogged25) {
+			console.log('User has scrolled at least 20%');
+			this.hasLogged25 = true;
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_logging_context(
+					'INFO',
+					'Aa_knowledgeAgentAssist',
+					'handleScroll KC AMA PCS',
+					'AA Scroll',
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					AgentAssistSplunkLoggingUtils.splunk_agentAssistScrolled(
+						localStorage.getItem('agentAssistVoiceCallId'),
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						userId,
+						'TRUE'
+					)
+				)
+			);
+
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			console.log('AA_Scroll splunk log');
 		}
 	}
 
@@ -158,5 +246,18 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 
 	get isShowAMA() {
 		return this.isAMAEnabled && this.showAMA;
+	}
+
+	@wire(isFeatureEnabled, { featureName: 'AA_Agent_Orchestration' })
+	wiredAOFeatureEnabled({ error, data }) {
+		if (data) {
+			this.isAOEnabled = data;
+		} else if (error) {
+			console.error(error);
+		}
+	}
+
+	get isShowAO() {
+		return this.isAOEnabled && this.isOrchestrating;
 	}
 }

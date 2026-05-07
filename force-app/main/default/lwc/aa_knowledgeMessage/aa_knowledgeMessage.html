@@ -1,5 +1,5 @@
 <template>
-	<div class="container">
+	<div class="container" oncopy={handleCopy} onclick={handleLinkClick}>
 		<!--error-->
 		<template lwc:if={error}>
 			<div class="knowledge-error">
@@ -24,6 +24,7 @@
 						data-is-pinned={card.isPinned}
 						key={card.card_id}
 						data-card-id={card.card_id}
+						data-card-title={card.header}
 						class="card"
 					>
 						<div class="card-details">

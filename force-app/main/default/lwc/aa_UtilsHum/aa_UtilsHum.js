@@ -22,6 +22,7 @@ import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agen
 import hasLiveTranscriptionPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
+import Id from '@salesforce/user/Id';
 
 export default class AgentAssistWebsocket {
 	websocket;
@@ -33,6 +34,8 @@ export default class AgentAssistWebsocket {
 	interaction360Permission = hasInteraction360Permission;
 	knowledgeCardPermission = hasKnowledgeCardPermission;
 	connectionretrycount = 0;
+	userId = Id;
+	aaSessionId;
 
 	async setupWebSocketIoClient(token) {
 		this.connectionretrycount = 0;
@@ -51,7 +54,11 @@ export default class AgentAssistWebsocket {
 			publish(
 				messageContext,
 				VOICE_CALL_CHANNEL,
-				AgentAssistEvents.aa_lms_event(AgentAssistLabels.TOKEN_EXPIRED, data)
+				AgentAssistEvents.aa_lms_event(AgentAssistLabels.TOKEN_EXPIRED, {
+					messageText: 'Token Missing',
+					source: 'setupWebSocketIoClient',
+					level: 'info'
+				})
 			);
 			return;
 		}
@@ -98,8 +105,10 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on connect',
 								'Websocket Connected',
-								this.websocket.id,
-								AgentAssistSplunkLoggingUtils.splunk_session_message(this.websocket.id)
+								this.userId,
+								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								this.userId,
+								'AgentAssist'
 							)
 						);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'WebsocketEvent' });
@@ -175,8 +184,10 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on disconnect',
 								'Websocket Disconnected',
-								this.websocket.id,
-								AgentAssistSplunkLoggingUtils.splunk_session_message(this.websocket.id)
+								this.userId,
+								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								this.userId,
+								'AgentAssist'
 							)
 						);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'WebsocketEvent' });
@@ -304,8 +315,10 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on connect_error',
 								'WebSocket Connection Error',
-								this.websocket.id,
-								AgentAssistSplunkLoggingUtils.splunk_session_message(this.websocket.id)
+								this.userId,
+								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								this.userId,
+								'AgentAssist'
 							)
 						);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'WebsocketEvent' });
@@ -409,8 +422,10 @@ export default class AgentAssistWebsocket {
 									localStorage.getItem('agentAssistGenesysInteractionId'),
 									AgentAssistSplunkLoggingUtils.splunk_interaction_session_message(
 										localStorage.getItem('agentAssistGenesysInteractionId'),
-										this.websocket.id
-									)
+										this.aaSessionId
+									),
+									this.userId,
+									'AgentAssist'
 								)
 							);
 							LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'WebsocketEvent' });
@@ -484,6 +499,7 @@ export default class AgentAssistWebsocket {
 					this.websocket.on(AgentAssistLabels.SET_INTERACTION_CONTEXT_NOTIFICATION, (data, ack) => {
 						try {
 							const messageContext = createMessageContext();
+							this.aaSessionId = data?.data?.agent_assist_session_id;
 							publish(messageContext, VOICE_CALL_CHANNEL, {
 								type: AgentAssistLabels.SET_INTERACTION_CONTEXT_NOTIFICATION,
 								data: data
@@ -588,17 +604,103 @@ export default class AgentAssistWebsocket {
 		} else console.log('aa_UtilsHum | setupWebSocketIoClient |Websocket already connected.');
 	}
 
+	/* old
+async publishInteractionContext(interactionDetails){
+    try{
+        if(this.agentSalesforceId == interactionDetails.data.payload.CreatedById
+            && this.interactionId != interactionDetails.data.payload.InteractionId__c
+            && !interactionDetails.data.payload.Call_Disposition__c!='completed'
+            && interactionDetails.data.payload.InteractionId__c != this.lastinteractionId){
+            this.interactionId = interactionDetails.data.payload.InteractionId__c;
+            const messageContext = createMessageContext();
+            console.log("interaction ID:"+interactionDetails.data.payload.InteractionId__c);
+            publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.SET_INTERACTION_CONTEXT, data: interactionDetails.data.payload});
+        }
+    }
+    catch(error)
+    {
+        LWCLogger({messageText: 'Error in publishInteractionContext: '+error, source: 'createWebSocketIoClient', level: 'error'});
+        console.log("Error in publishInteractionContext: "+error);
+    }
+
+}
+*/
+
+	//pawan
+
 	async publishInteractionContext(interactionDetails) {
+		console.log('Utils message = >', JSON.stringify(interactionDetails));
+
+		console.log('userId:', this.userId, typeof this.userId, this.userId?.length);
+		console.log(
+			'CreatedById:',
+			interactionDetails.data.payload.CreatedById,
+			typeof interactionDetails.data.payload.CreatedById,
+			interactionDetails.data.payload.CreatedById?.length
+		);
+
+		console.log(
+			'Created_By__c:',
+			interactionDetails.data.payload.Created_By__c,
+			typeof interactionDetails.data.payload.Created_By__c,
+			interactionDetails.data.payload.Created_By__c?.length
+		);
+
+		console.log('Utils message = > user ', this.userId);
+		console.log(
+			'Utils message = > CreatedById ' +
+				interactionDetails.data.payload.CreatedById +
+				'Created_By__c ' +
+				interactionDetails.data.payload.Created_By__c
+		);
+		if (this.userId === interactionDetails.data.payload.CreatedById)
+			console.log(
+				'Utils message = > Inside interactionDetails.CreatedById : ',
+				interactionDetails.data.payload.CreatedById
+			);
+		if (this.userId === interactionDetails.data.payload.Created_By__c)
+			console.log(
+				'Utils message = > insideinteractionDetails.Created_By__c : ',
+				interactionDetails.data.payload.Created_By__c
+			);
+
 		try {
+			const newInteractionId = interactionDetails.data.payload.InteractionId__c;
+			console.log('Utils message = > Interactionid ', interactionDetails.data.payload.InteractionId__c);
+			const previousInteractionId = sessionStorage.getItem('agentAssistGenesysInteractionId');
+
+			// If there is a previous interaction and it's not the same as the new one, close it first
+
+			if (previousInteractionId && previousInteractionId !== newInteractionId) {
+				console.log('Previous interaction still open. Ending it:', previousInteractionId);
+
+				// Send end-interaction context for the previous interaction
+				if (this.userId === interactionDetails.data.payload.CreatedById)
+					await this.endInteraction(previousInteractionId);
+
+				// Clear the session storage for the previous interaction
+
+				sessionStorage.removeItem('agentAssistGenesysInteractionId');
+			}
+
+			// Set the new interaction id in session storage
+
+			sessionStorage.setItem('agentAssistGenesysInteractionId', newInteractionId);
+
+			// Send interaction context for the new call
+
 			if (
-				this.agentSalesforceId == interactionDetails.data.payload.CreatedById &&
-				this.interactionId != interactionDetails.data.payload.InteractionId__c &&
-				!interactionDetails.data.payload.Call_Disposition__c != 'completed' &&
-				interactionDetails.data.payload.InteractionId__c != this.lastinteractionId
+				this.agentSalesforceId === interactionDetails.data.payload.CreatedById &&
+				this.interactionId !== newInteractionId &&
+				interactionDetails.data.payload.Call_Disposition__c !== 'completed' && // Only send if not completed
+				newInteractionId !== this.lastinteractionId
 			) {
-				this.interactionId = interactionDetails.data.payload.InteractionId__c;
+				this.interactionId = newInteractionId;
+
 				const messageContext = createMessageContext();
-				console.log('interaction ID:' + interactionDetails.data.payload.InteractionId__c);
+
+				console.log('interaction ID:' + newInteractionId);
+
 				publish(messageContext, VOICE_CALL_CHANNEL, {
 					type: AgentAssistLabels.SET_INTERACTION_CONTEXT,
 					data: interactionDetails.data.payload
@@ -610,9 +712,12 @@ export default class AgentAssistWebsocket {
 				source: 'createWebSocketIoClient',
 				level: 'error'
 			});
+
 			console.log('Error in publishInteractionContext: ' + error);
 		}
 	}
+
+	//pawan
 
 	async endInteraction(interactionId) {
 		try {
@@ -640,8 +745,10 @@ export default class AgentAssistWebsocket {
 					localStorage.getItem('agentAssistGenesysInteractionId'),
 					AgentAssistSplunkLoggingUtils.splunk_interaction_session_message(
 						localStorage.getItem('agentAssistGenesysInteractionId'),
-						this.websocket.id
-					)
+						this.aaSessionId
+					),
+					this.userId,
+					'AgentAssist'
 				)
 			);
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'WebsocketEvent' });
@@ -964,7 +1071,9 @@ export const AgentAssistSplunkLoggingUtils = {
 		subcomponent_name,
 		event_title,
 		correlation_id,
-		requested_data
+		requested_data,
+		salesforce_user_id,
+		log_source
 	) => ({
 		LogEventType: event_type,
 		DateTime: Date.now() / 1000,
@@ -972,11 +1081,13 @@ export const AgentAssistSplunkLoggingUtils = {
 		SubComponentName: subcomponent_name,
 		TransactionName: event_title,
 		CorrelationId: correlation_id,
-		Message: requested_data
+		Message: requested_data,
+		SalesforceUserId: salesforce_user_id,
+		Source: log_source
 	}),
 
-	splunk_interacting_member_message: (aa_interacting_member_id) => ({
-		InteractingMemberId: aa_interacting_member_id
+	splunk_number_of_interactions_message: (number_of_interactions) => ({
+		NumberOfInteractions: number_of_interactions
 	}),
 
 	splunk_interaction_message: (genesys_interaction_id) => ({
@@ -1014,5 +1125,33 @@ export const AgentAssistSplunkLoggingUtils = {
 		GenesysInteractionId: genesys_interaction_id,
 		AgentAssistSessionId: agent_assist_session_id,
 		AskMeAnythingQueryId: ama_query_id
+	}),
+	splunk_agentAssistAutoOpen_message: (voiceCallId, genesysInteractionId) => ({
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId
+	}),
+	splunk_agentAssistCopied_message: (voiceCallId, genesysInteractionId, User_Id, messageText) => ({
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId,
+		User_Id: User_Id,
+		Copied_Text: messageText
+	}),
+	splunk_agentAssistScrolled: (voiceCallId, genesysInteractionId, User_Id, messageText) => ({
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId,
+		User_Id: User_Id,
+		Scrolled: messageText
+	}),
+	splunk_agentAssist_linkClicked: (voiceCallId, genesysInteractionId, User_Id, url_clicked, url_text, cardTitle) => ({
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId,
+		User_Id: User_Id,
+		Clicked_URL: url_clicked,
+		Text_URL: url_text,
+		Card_Title: cardTitle
+	}),
+
+	splunk_websocket_message: (salesforce_user_id) => ({
+		SalesforceUserId: salesforce_user_id
 	})
 };

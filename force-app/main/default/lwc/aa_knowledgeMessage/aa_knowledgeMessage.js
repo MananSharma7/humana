@@ -481,7 +481,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			let isLoading = false;
 			let isAbandoned = false;
 			let isCompleted = false;
-			let isFooter = false;
+			let isFooter = true;
 			let isSummary = false;
 
 			const card = {
@@ -788,7 +788,16 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		});
 		this.saveState();
 
-		const data = AgentAssistEvents.agent_feedback(true, 'Liked', cardId, this.interactionId);
+		let data;
+		let label = 'Thank you for your feedback!';
+
+		if (this.cards.find((c) => c.card_id === cardId)?.isSummary) {
+			data = AgentAssistEvents.agent_feedback('true', 'Liked', cardId, this.interactionId);
+			label = 'Thank you for your feedback!';
+		} else {
+			data = AgentAssistEvents.agent_feedback(true, 'Liked', cardId, this.interactionId);
+			label = 'Thanks for providing a reason!'; // Keeping existing (though likely a bug, as per plan we maintain existing)
+		}
 
 		try {
 			publish(
@@ -798,7 +807,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			);
 
 			Toast.show({
-				label: 'Thanks for providing a reason!',
+				label: label,
 				mode: 'dismissible',
 				variant: 'success'
 			});
@@ -820,6 +829,50 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
+				let reasons = [
+					{
+						text: 'Not relevant',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					},
+					{
+						text: 'Info not accurate',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					},
+					{
+						text: 'Confusing Content',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					}
+				];
+
+				if (card.isSummary) {
+					reasons = [
+						{
+							text: 'Inaccurate information',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						},
+						{
+							text: 'Missing information',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						},
+						{
+							text: 'Contains PHI/PFI',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						}
+					];
+				}
+
 				return {
 					...card,
 					isLiked: false,
@@ -831,26 +884,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
 					isDislikeDisabled: 'pointer-events:none; opacity:1;',
 
-					disLikeReasons: [
-						{
-							text: 'Not relevant',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						},
-						{
-							text: 'Info not accurate',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						},
-						{
-							text: 'Confusing Content',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						}
-					],
+					disLikeReasons: reasons,
 					showDislikeReasons: true
 				};
 			}
@@ -858,7 +892,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		});
 		this.saveState();
 
-		const data = AgentAssistEvents.agent_feedback(false, 'Disliked', cardId, this.interactionId);
+		const card = this.cards.find((c) => c.card_id === cardId);
+		let data;
+		if (card?.isSummary) {
+			data = AgentAssistEvents.agent_feedback('false', 'Disliked', cardId, this.interactionId);
+		} else {
+			data = AgentAssistEvents.agent_feedback(false, 'Disliked', cardId, this.interactionId);
+		}
 
 		try {
 			publish(
@@ -911,7 +951,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		});
 		this.saveState();
 
-		const data = AgentAssistEvents.agent_feedback(false, selectedReason, cardId, this.interactionId);
+		const card = this.cards.find((c) => c.card_id === cardId);
+		let data;
+		if (card?.isSummary) {
+			data = AgentAssistEvents.agent_feedback('false', selectedReason, cardId, this.interactionId);
+		} else {
+			data = AgentAssistEvents.agent_feedback(false, selectedReason, cardId, this.interactionId);
+		}
 
 		try {
 			publish(
