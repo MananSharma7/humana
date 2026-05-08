@@ -792,7 +792,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		let label = 'Thank you for your feedback!';
 
 		if (this.cards.find((c) => c.card_id === cardId)?.isSummary) {
-			data = AgentAssistEvents.agent_feedback('true', 'Liked', cardId, this.interactionId);
+			data = {
+				version: '1.0',
+				event_type: 'pcs_feedback_event',
+				data: {
+					card_metadata: {
+						interaction_id: this.interactionId,
+						user_network_id: ''
+					},
+					feedback: {
+						feedback_text: 'No feedback_text',
+						rating: 'true'
+					}
+				}
+			};
 			label = 'Thank you for your feedback!';
 		} else {
 			data = AgentAssistEvents.agent_feedback(true, 'Liked', cardId, this.interactionId);
@@ -895,7 +908,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const card = this.cards.find((c) => c.card_id === cardId);
 		let data;
 		if (card?.isSummary) {
-			data = AgentAssistEvents.agent_feedback('false', 'Disliked', cardId, this.interactionId);
+			data = {
+				version: '1.0',
+				event_type: 'pcs_feedback_event',
+				data: {
+					card_metadata: {
+						interaction_id: this.interactionId,
+						user_network_id: ''
+					},
+					feedback: {
+						feedback_text: 'No feedback_text',
+						rating: 'false'
+					}
+				}
+			};
 		} else {
 			data = AgentAssistEvents.agent_feedback(false, 'Disliked', cardId, this.interactionId);
 		}
@@ -954,7 +980,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const card = this.cards.find((c) => c.card_id === cardId);
 		let data;
 		if (card?.isSummary) {
-			data = AgentAssistEvents.agent_feedback('false', selectedReason, cardId, this.interactionId);
+			data = {
+				version: '1.0',
+				event_type: 'pcs_feedback_event',
+				data: {
+					card_metadata: {
+						interaction_id: this.interactionId,
+						user_network_id: ''
+					},
+					feedback: {
+						feedback_text: selectedReason,
+						rating: 'false'
+					}
+				}
+			};
 		} else {
 			data = AgentAssistEvents.agent_feedback(false, selectedReason, cardId, this.interactionId);
 		}

@@ -1234,7 +1234,12 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	sendKnowledgeCardFeedback(data) {
-		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | data: ' + data);
+		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | data: ' + JSON.stringify(data));
+
+		if (data && data.event_type === 'pcs_feedback_event') {
+			this.websocket.emitEvent('pcs_feedback_event', data);
+			return;
+		}
 
 		let datum = data?.data;
 		let feedback_value = data?.data?.feedback?.rating;
