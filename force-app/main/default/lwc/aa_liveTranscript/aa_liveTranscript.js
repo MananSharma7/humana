@@ -1,7 +1,9 @@
 import { LightningElement, track, wire } from 'lwc';
 import { subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
-import { AgentAssistLabels } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
+import userId from '@salesforce/user/Id';
+import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 
 function formatTime(isoString) {
 	try {
@@ -69,7 +71,9 @@ export default class Aa_liveTranscript extends LightningElement {
 			this.isLive = false;
 		} else if (message && message.type === AgentAssistLabels.UPDATE_INTERACTION) {
 			// New interaction started — clear previous transcription data
-			console.log('aa_liveTranscript | handleMessage | UPDATE_INTERACTION received. Clearing previous transcript.');
+			console.log(
+				'aa_liveTranscript | handleMessage | UPDATE_INTERACTION received. Clearing previous transcript.'
+			);
 			this._resetTranscriptState();
 		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
 			// Call ended — clear transcription data so it doesn't persist to the next call
@@ -112,7 +116,8 @@ export default class Aa_liveTranscript extends LightningElement {
 			this.unsubscribeToMessageChannel();
 			this.isLive = false;
 			this.hasError = true;
-			this.errorMessage = chunk.error.user_message || chunk.error.message || 'An error occurred during live transcription.';
+			this.errorMessage =
+				chunk.error.user_message || chunk.error.message || 'An error occurred during live transcription.';
 			return;
 		}
 
@@ -304,5 +309,24 @@ export default class Aa_liveTranscript extends LightningElement {
 
 	handleClose() {
 		this.dispatchEvent(new CustomEvent('toggletranscript'));
+	}
+
+	handleCopyTranscription(event) {
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_liveTranscript.js',
+				'handleCopyTranscription',
+				'AA Copy',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_agentAssistCopied_message(
+					localStorage.getItem('agentAssistVoiceCallId'),
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId
+				)
+			)
+		);
+
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 }

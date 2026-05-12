@@ -952,8 +952,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		}
 	}
 	selectDislikeReason(event) {
-		const cardId = event.target.dataset.id;
-		const selectedReason = event.target.dataset.reason;
+		const cardId = event.currentTarget.dataset.id;
+		const selectedReason = event.currentTarget.dataset.reason;
 
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {

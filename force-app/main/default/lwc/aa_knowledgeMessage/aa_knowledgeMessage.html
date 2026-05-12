@@ -387,11 +387,14 @@
 										<template for:each={card.disLikeReasons} for:item="reason">
 											<button
 												key={reason.text}
-												class="custom-chip"
+												class="slds-button slds-button_outline-brand"
 												data-reason={reason.text}
 												onclick={selectDislikeReason}
 												data-id={card.card_id}
 												disabled={reason.disabled}
+												aria-label={reason.text}
+												title={reason.text}
+												style="line-height: 1.2rem"
 											>
 												{reason.text}
 											</button>
