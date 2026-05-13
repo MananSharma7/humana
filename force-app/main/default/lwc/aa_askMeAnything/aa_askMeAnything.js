@@ -96,7 +96,7 @@ export default class Aa_askMeAnything extends LightningElement {
 					data?.data?.content?.query?.text +
 					'; AMA Query ID: ' +
 					data?.data?.card_metadata?.query_id,
-				source: 'askQuery | Ask Me Anything',
+				source: 'AA | askQuery',
 				level: 'info'
 			});
 

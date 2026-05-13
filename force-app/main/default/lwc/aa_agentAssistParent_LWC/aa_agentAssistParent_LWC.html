@@ -50,6 +50,7 @@
 				<div class={outerContainerClass}>
 					<!-- Vertical transcript tab button (always visible) -->
 					<template if:true={isPopoutMode}>
+						<!-- <template if:true={showTranscriptButton}> -->
 						<button
 							class="transcript-tab-btn"
 							onclick={handleToggleTranscript}
@@ -64,6 +65,7 @@
 							></lightning-icon>
 							<span class="tab-label">Transcript</span>
 						</button>
+						<!-- </template> -->
 					</template>
 
 					<!-- Live Transcript Panel (overlays main panels) — kept in DOM to preserve state -->

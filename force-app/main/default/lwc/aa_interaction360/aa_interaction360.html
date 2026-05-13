@@ -1,6 +1,6 @@
 <template>
 	<template if:true={showI360}>
-		<div class="slds-card">
+		<div class="slds-card" oncopy={handleCopyInteraction360}>
 			<div class="slds-tabs_default">
 				<ul class="slds-tabs_default__nav slds-is-relative" role="tablist">
 					<li class={tabClass} title="Item One" role="presentation">
@@ -11,7 +11,6 @@
 							aria-selected="true"
 							aria-controls="tab-default-1"
 							id="tab-default-1__item"
-							onclick={handleTabClick}
 						>
 							{callHistoryLabel}
 						</a>

@@ -22,7 +22,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	@track orchestrationStatus = '';
 	@track isOrchestrating = false;
 	subscription = null;
-	hasLogged25 = false;
+	hasLogged = false;
 
 	@wire(MessageContext)
 	messageContext;
@@ -30,6 +30,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	connectedCallback() {
 		this.subscribeToMessageChannel();
 		this.handleStateLoad();
+		this.hasLogged = false;
 	}
 
 	disconnectedCallback() {
@@ -100,64 +101,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			this.isOrchestrating = false;
 			this.orchestrationStatus = '';
 			this.saveState();
-			this.hasLogged25 = false;
-		}
-	}
-
-	@track orchestrationStatus = '';
-	@track isOrchestrating = false;
-	subscription = null;
-
-	@wire(MessageContext)
-	messageContext;
-
-	connectedCallback() {
-		this.subscribeToMessageChannel();
-		this.hasLogged25 = false;
-	}
-
-	disconnectedCallback() {
-		if (this.subscription) {
-			unsubscribe(this.subscription);
-			this.subscription = null;
-		}
-	}
-
-	subscribeToMessageChannel() {
-		if (!this.subscription) {
-			this.subscription = subscribe(
-				this.messageContext,
-				VOICE_CALL_CHANNEL,
-				(message) => this.handleMessage(message),
-				{ scope: APPLICATION_SCOPE }
-			);
-		}
-	}
-
-	handleMessage(message) {
-		if (message && message.type === AgentAssistLabels.Activity_Status_Indicator) {
-			const data = message.data?.data || message.data;
-			let statusText = '';
-			if (data && data.message) {
-				statusText = data.message;
-			} else if (data && data.content && data.content.text) {
-				statusText = data.content.text;
-			} else if (data && data.status) {
-				statusText = data.status;
-			}
-
-			if (statusText) {
-				this.orchestrationStatus = statusText;
-				this.isOrchestrating = true;
-			} else {
-				// If no status text is provided, we can hide it or clear it
-				this.isOrchestrating = false;
-				this.orchestrationStatus = '';
-			}
-		} else if (message && message.type === AgentAssistLabels.END_INTERACTION) {
-			this.isOrchestrating = false;
-			this.orchestrationStatus = '';
-			this.hasLogged25 = false;
+			this.hasLogged = false;
 		}
 	}
 
@@ -179,16 +123,15 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 
 		//  Calculate scroll percentage
 		const scrollableHeight = scrollHeight - clientHeight;
-		const scrollPercent = (scrollTop / scrollableHeight) * 100;
+		const scrollPercent = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
 
 		//  Log ONLY ONCE per interaction
-		if (scrollPercent >= 20 && !this.hasLogged25) {
-			console.log('User has scrolled at least 20%');
-			this.hasLogged25 = true;
+		if (scrollPercent >= 20 && !this.hasLogged) {
+			this.hasLogged = true;
 			let splunkJsonString = JSON.stringify(
 				AgentAssistSplunkLoggingUtils.splunk_logging_context(
 					'INFO',
-					'Aa_knowledgeAgentAssist',
+					'aa_knowledgeAgentAssist.js',
 					'handleScroll KC AMA PCS',
 					'AA Scroll',
 					localStorage.getItem('agentAssistGenesysInteractionId'),
@@ -202,7 +145,6 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			);
 
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-			console.log('AA_Scroll splunk log');
 		}
 	}
 

@@ -25,6 +25,8 @@ import getAzureCallout from '@salesforce/apex/AA_AzureOAuthGraphCallout.getAzure
 import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAccess';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
+import AA_SESSION_ID from '@salesforce/schema/VoiceCall.AgentAssist_Session_ID__c';
+// import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
@@ -36,6 +38,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	intContErrorMessage = null;
 	isCustContextError = false;
 	custContErrorMessage = null;
+	// isLiveTranscriptEnabled = false;
 
 	@wire(MessageContext) messageContext;
 
@@ -770,22 +773,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
 					this.handleOpenAAUtility();
-					//splunk logging
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_logging_context(
-							'INFO',
-							'aa_agentAssistParentLWC',
-							'sendInteractionContext',
-							'AA Auto Open',
-							this.genesysInteractionId,
-							AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
-								this.voiceCallId,
-								this.genesysInteractionId
-							)
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-					console.log('AA_autoOpen splunk log');
 				}
 			} else {
 				this.websocket.emitEvent(
@@ -807,22 +794,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
 					this.handleOpenAAUtility();
-					//splunk logging
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_logging_context(
-							'INFO',
-							'aa_agentAssistParentLWC',
-							'sendInteractionContext',
-							'AA Auto Open',
-							this.genesysInteractionId,
-							AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
-								this.voiceCallId,
-								this.genesysInteractionId
-							)
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-					console.log('AA_autoOpen splunk log');
 				}
 			}
 			LWCLogger({
@@ -1018,7 +989,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			console.log('aa_agentAssistParent_LWC|fetchUserToken before getSSOAccessToken');
 			stoken = await getSSOAccessToken({ isRefresh: this.isTokenRefreshRequired });
 			if (stoken && stoken.length > 0) {
-				console.log('aa_agentAssistParent_LWC|fetchUserToken after getSSOAccessToken:', stoken);
+				console.log('aa_agentAssistParent_LWC|fetchUserToken after getSSOAccessToken length:', stoken.length);
 				_this.resetAAParams();
 				//_this.accessToken = stoken;
 				_this.initializeWebsocketAfterTokenRetrieval(stoken);
@@ -1300,6 +1271,24 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			source: 'sendAMAQuery | Ask Me Anything',
 			level: 'info'
 		});
+
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_agentAssistParent_LWC.js',
+				'sendAMAQuery',
+				'Ask Me Anything Request Submitted',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_question_message(
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					'placeholder',
+					data?.data?.content?.query?.text,
+					isReply
+				),
+				USER_RECORD_ID
+			)
+		);
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 	handleExpand() {
 		setTimeout(() => {
@@ -1487,10 +1476,38 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	async handleOpenAAUtility() {
 		//Use to open AA utility Automatically
-
 		if (!this.utilityId) {
 			return;
 		}
 		await open(this.utilityId, { autoFocus: true });
+
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_agentAssistParentLWC.js',
+				'handleOpenAAUtility',
+				'AA Auto Open',
+				this.genesysInteractionId,
+				AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
+					this.userSalesforceId,
+					this.voiceCallId,
+					this.genesysInteractionId
+				)
+			)
+		);
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
+
+	/* @wire(isFeatureEnabled, { featureName: 'AA_Live_Transcription' })
+	wired({ error, data }) {
+		if (data) {
+			this.isLiveTranscriptEnabled = data;
+		} else if (error) {
+			console.error(error);
+		}
+	}
+
+	get showTranscriptButton(){
+		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
+	} */
 }

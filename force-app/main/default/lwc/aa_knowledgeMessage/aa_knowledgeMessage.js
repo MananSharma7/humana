@@ -2,13 +2,15 @@ import { LightningElement, track, api, wire } from 'lwc';
 import { publish, subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import Toast from 'lightning/toast';
-import { AgentAssistLabels, AgentAssistEvents } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistEvents, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
 import hasAgentAssistPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Custom';
 import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
 import hasAMAPermission from '@salesforce/customPermission/AA_AskMeAnything';
 import hasPostCallSummaryPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Post_Call_Summary';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
+import userId from '@salesforce/user/Id';
+import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 
 export default class Aa_knowledgeMessage extends LightningElement {
 	@track _isJumpInPresentVisible = false;
@@ -198,6 +200,23 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_logging_context(
+							'INFO',
+							'aa_knowledgeMessage.js',
+							'prepareAskMeAnything',
+							'Ask Me Anything Card Completed',
+							localStorage.getItem('agentAssistGenesysInteractionId'),
+							AgentAssistSplunkLoggingUtils.splunk_card_message(
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								'placeholder',
+								content?.header,
+								cardMetadata?.card_id
+							),
+							userId
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 					break;
 				case 'abandoned':
 					isAbandoned = true;
@@ -214,6 +233,23 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
+					let splunkJsonStringAbandoned = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_logging_context(
+							'INFO',
+							'aa_knowledgeMessage.js',
+							'prepareAskMeAnything',
+							'Ask Me Anything Card Abandoned',
+							localStorage.getItem('agentAssistGenesysInteractionId'),
+							AgentAssistSplunkLoggingUtils.splunk_card_message(
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								'placeholder',
+								content?.header,
+								cardMetadata?.card_id
+							),
+							userId
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonStringAbandoned, eventName: 'AgentAssistUsageEvent' });
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -1031,5 +1067,78 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		} else if (error) {
 			console.error(error);
 		}
+	}
+
+	handleCopy(event) {
+		const cardEl = event.target.closest('[data-card-id]');
+		if (!cardEl) return;
+
+		const cardId = cardEl.dataset.cardId;
+
+		const card = this.cards.find((c) => c.card_id == cardId);
+		if (!card) return;
+
+		let cardType = 'handleCopy KnowledgeCard';
+
+		if (card.card_AMA) {
+			cardType = 'handleCopy AMA';
+		} else if (card.isSummary) {
+			cardType = 'handleCopy PCS';
+		}
+
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_knowledgeMessage.js',
+				cardType,
+				'AA Copy',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_agentAssistCopied(
+					cardId,
+					localStorage.getItem('agentAssistVoiceCallId'),
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId
+				)
+			)
+		);
+
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+	}
+
+	handleLinkClick(event) {
+		const anchor = event.target.closest('a');
+		if (!anchor) return;
+
+		const cardEl = anchor.closest('[data-card-id]');
+		if (!cardEl) return;
+
+		const cardId = cardEl.dataset.cardId;
+
+		const card = this.cards.find((c) => c.card_id == cardId);
+		if (!card) return;
+
+		let cardType = 'handleLinkClick KnowledgeCard';
+
+		if (card.card_AMA) {
+			cardType = 'handleLinkClick AMA';
+		}
+
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_knowledgeMessage.js',
+				cardType,
+				'AA LinkClicked',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_agentAssist_linkClicked(
+					cardId,
+					localStorage.getItem('agentAssistVoiceCallId'),
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId
+				)
+			)
+		);
+
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 }

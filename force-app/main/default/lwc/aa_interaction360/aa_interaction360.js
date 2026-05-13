@@ -3,8 +3,10 @@ import { subscribe, unsubscribe, APPLICATION_SCOPE, MessageContext } from 'light
 import hasIntercation from '@salesforce/customPermission/MarketPoint_Agent_Assist_Interaction360_Custom';
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
-import { AgentAssistLabels } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
+import userId from '@salesforce/user/Id';
+import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 
 export default class Aa_interaction360 extends LightningElement {
 	@api recordId;
@@ -51,6 +53,7 @@ export default class Aa_interaction360 extends LightningElement {
 				if (this.callHistories.length > 0) {
 					this.errorMessage = '';
 					this.updateStatusMessage(false, false);
+					this.isExpanded = true;
 				}
 				console.log(
 					'Interaction360 handleStateLoad: Restored ' + this.callHistories.length + ' history items.'
@@ -229,6 +232,7 @@ export default class Aa_interaction360 extends LightningElement {
 			if (this.callHistories.length > 0) {
 				this.errorMessage = '';
 				this.updateStatusMessage(false, false);
+				this.isExpanded = true;
 			}
 		} catch (error) {
 			console.error('Interaction360 History Error:', error);
@@ -241,10 +245,13 @@ export default class Aa_interaction360 extends LightningElement {
 	updateStatusMessage(noCall, awaitingNewMessage) {
 		if (noCall) {
 			this.statusMessage = 'No previous interactions found';
+			this.isExpanded = true;
 		} else if (awaitingNewMessage) {
 			this.statusMessage = 'Awaiting new interaction';
+			this.isExpanded = true;
 		} else {
 			this.statusMessage = '';
+			this.isExpanded = false;
 		}
 	}
 
@@ -289,10 +296,12 @@ export default class Aa_interaction360 extends LightningElement {
 
 	showError(message) {
 		this.errorMessage = message;
+		this.isExpanded = true;
 		LWCLogger({ messageText: this.errorMessage, source: 'Interaction360 LWC comp', level: 'error' });
 	}
 	handleInitialization() {
 		this.errorMessage = '';
+		this.isExpanded = true;
 		if (this.callHistories.length === 0) {
 			this.updateStatusMessage(true, false);
 		}
@@ -344,8 +353,7 @@ export default class Aa_interaction360 extends LightningElement {
 
 		if (isNaN(number)) return;
 
-		const updated = { ...this.callHistories[number], isExpanded: !this.callHistories[number].isExpanded };
-		this.callHistories = [...this.callHistories.slice(0, number), updated, ...this.callHistories.slice(number + 1)];
+		this.callHistories[number].isExpanded = !this.callHistories[number].isExpanded;
 	}
 
 	@wire(isFeatureEnabled, { featureName: 'MP_Interaction_360' })
@@ -359,5 +367,24 @@ export default class Aa_interaction360 extends LightningElement {
 
 	get showI360() {
 		return this.isI360Enabled && this.showInteraction;
+	}
+
+	handleCopyInteraction360(event) {
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_interaction360.js',
+				'handleCopyInteraction360',
+				'AA Copy',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_agentAssistCopied_message(
+					localStorage.getItem('agentAssistVoiceCallId'),
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId
+				)
+			)
+		);
+
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 }
