@@ -23,7 +23,6 @@ import hasLiveTranscriptionPermission from '@salesforce/customPermission/MarketP
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 import Id from '@salesforce/user/Id';
-import getAASessionId from '@salesforce/apex/AA_Utility.getAASessionIdFromGenesysInteractionId';
 
 export default class AgentAssistWebsocket {
 	websocket;
@@ -106,8 +105,8 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on connect',
 								'Websocket Connected',
-								this.userId,
-								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								undefined,
+								undefined,
 								this.userId
 							)
 						);
@@ -184,8 +183,8 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on disconnect',
 								'Websocket Disconnected',
-								this.userId,
-								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								undefined,
+								undefined,
 								this.userId
 							)
 						);
@@ -233,6 +232,21 @@ export default class AgentAssistWebsocket {
 									source: 'setupWebsocketIoClient | Interaction360',
 									level: 'info'
 								});
+								let splunkJsonString = JSON.stringify(
+									AgentAssistSplunkLoggingUtils.splunk_logging_context(
+										'INFO',
+										'aa_UtilsHum.js',
+										'websocket.on(HSTORICAL_INTERACTION_SUMMARY)',
+										'Interaction360 Available',
+										undefined,
+										AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
+											localStorage.getItem('agentAssistGenesysInteractionId'),
+											localStorage.getItem('agentAssistVoiceCallId')
+										),
+										this.userId
+									)
+								);
+								LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 							} catch (err) {
 								console.error(
 									'aa_UtilsHum | setupWebSocketIoClient | historical_interaction_summary error:',
@@ -314,8 +328,8 @@ export default class AgentAssistWebsocket {
 								'aa_UtilsHum.js',
 								'websocket.on connect_error',
 								'WebSocket Connection Error',
-								this.userId,
-								AgentAssistSplunkLoggingUtils.splunk_websocket_message(this.userId),
+								undefined,
+								undefined,
 								this.userId
 							)
 						);
@@ -411,22 +425,6 @@ export default class AgentAssistWebsocket {
 								source: 'setupWebSocketIoClient | Interaction Context Returned',
 								level: 'info'
 							});
-							this.retrieveAASessionId();
-							let splunkJsonString = JSON.stringify(
-								AgentAssistSplunkLoggingUtils.splunk_logging_context(
-									'INFO',
-									'aa_UtilsHum.js',
-									'websocket.on SET_INTERACTION_RESPONSE',
-									'Interaction Context Set',
-									localStorage.getItem('agentAssistGenesysInteractionId'),
-									AgentAssistSplunkLoggingUtils.splunk_interaction_session_message(
-										localStorage.getItem('agentAssistGenesysInteractionId'),
-										this.aaSessionId
-									),
-									this.userId
-								)
-							);
-							LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 						} catch (err) {
 							console.error('SET_INTERACTION_CONTEXT handler error', err);
 						}
@@ -602,29 +600,21 @@ export default class AgentAssistWebsocket {
 		} else console.log('aa_UtilsHum | setupWebSocketIoClient |Websocket already connected.');
 	}
 
-	async retrieveAASessionId() {
-		try {
-			let aaSessionIdFromApex = await getAASessionId({
-				voiceCallId: localStorage.getItem('agentAssistGenesysInteractionId')
-			});
-			this.aaSessionId = aaSessionIdFromApex;
-		} catch (e) {
-			console.log('Unable to retrieve AgentAssistSessionId');
-		}
-	}
-
 	async publishInteractionContext(interactionDetails) {
+		if (interactionDetails.data.payload.RelatedRecordId__c !== null) {
+			return;
+		}
+
 		try {
 			const newInteractionId = interactionDetails.data.payload.InteractionId__c;
-			const previousInteractionId = sessionStorage.getItem('agentAssistGenesysInteractionId');
-			if (previousInteractionId && previousInteractionId !== newInteractionId) {
+			const previousInteractionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const newInteractionIdCheck = 'a' + newInteractionId;
+
+			if (previousInteractionId && previousInteractionId !== newInteractionIdCheck) {
 				// Send end-interaction context for the previous interaction
 				if (this.userId === interactionDetails.data.payload.CreatedById)
 					await this.endInteraction(previousInteractionId);
-				sessionStorage.removeItem('agentAssistGenesysInteractionId');
 			}
-
-			sessionStorage.setItem('agentAssistGenesysInteractionId', newInteractionId);
 
 			if (
 				this.agentSalesforceId === interactionDetails.data.payload.CreatedById &&
@@ -650,7 +640,6 @@ export default class AgentAssistWebsocket {
 
 	async endInteraction(interactionId) {
 		try {
-			console.log('Call ended: interaction ID: ' + this.interactionId);
 			this.lastinteractionId = this.interactionId;
 			let message = AgentAssistEvents.aa_lms_event(AgentAssistLabels.END_INTERACTION, {
 				interactionId: interactionId
@@ -671,10 +660,10 @@ export default class AgentAssistWebsocket {
 					'aa_UtilsHum.js',
 					'endInteraction',
 					'Call Ended',
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					AgentAssistSplunkLoggingUtils.splunk_interaction_session_message(
+					undefined,
+					AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
 						localStorage.getItem('agentAssistGenesysInteractionId'),
-						this.aaSessionId
+						localStorage.getItem('agentAssistVoiceCallId')
 					),
 					this.userId
 				)
@@ -991,6 +980,7 @@ export const AgentAssistEvents = {
 		}
 	})
 };
+
 export const AgentAssistSplunkLoggingUtils = {
 	splunk_logging_context: (
 		event_type,
@@ -1020,63 +1010,55 @@ export const AgentAssistSplunkLoggingUtils = {
 	}),
 
 	splunk_session_message: (agent_assist_session_id) => ({
-		AgentAssistSesionId: agent_assist_session_id
+		AgentAssistSessionId: agent_assist_session_id
 	}),
 
-	splunk_interaction_session_message: (genesys_interaction_id, agent_assist_session_id) => ({
+	splunk_interaction_callid_message: (genesys_interaction_id, voice_call_id) => ({
 		GenesysInteractionId: genesys_interaction_id,
-		AgentAssistSesisonId: agent_assist_session_id
+		VoiceCallId: voice_call_id
 	}),
 
-	splunk_card_message: (
-		genesys_interaction_id,
-		agent_assist_session_id,
-		knowledge_ama_card_title,
-		knowledge_ama_card_id
-	) => ({
+	splunk_card_message: (genesys_interaction_id, voice_call_id, knowledge_ama_card_id) => ({
 		GenesysInteractionId: genesys_interaction_id,
-		AgentAssistSessionId: agent_assist_session_id,
-		CardTitle: knowledge_ama_card_title,
+		VoiceCallId: voice_call_id,
 		CardId: knowledge_ama_card_id
 	}),
 
-	splunk_question_message: (genesys_interaction_id, agent_assist_session_id, ama_question_title, is_reply) => ({
+	splunk_question_message: (genesys_interaction_id, voice_call_id, is_reply) => ({
 		GenesysInteractionId: genesys_interaction_id,
-		AgentAssistSessionId: agent_assist_session_id,
-		AskMeAnythingQuestion: ama_question_title,
+		VoiceCallId: voice_call_id,
 		IsReply: is_reply
 	}),
 
-	splunk_query_message: (genesys_interaction_id, agent_assist_session_id, ama_query_id) => ({
+	splunk_query_message: (genesys_interaction_id, ama_query_id) => ({
 		GenesysInteractionId: genesys_interaction_id,
-		AgentAssistSessionId: agent_assist_session_id,
 		AskMeAnythingQueryId: ama_query_id
 	}),
 	splunk_agentAssistAutoOpen_message: (User_Id, voiceCallId, genesysInteractionId) => ({
 		User_Id: User_Id,
-		voiceCallId: voiceCallId,
+		VoiceCallId: voiceCallId,
 		GenesysInteractionId: genesysInteractionId
 	}),
 	splunk_agentAssistCopied_message: (voiceCallId, genesysInteractionId, User_Id) => ({
-		voiceCallId: voiceCallId,
+		VoiceCallId: voiceCallId,
 		GenesysInteractionId: genesysInteractionId,
 		User_Id: User_Id
 	}),
 	splunk_agentAssistCopied: (Card_id, voiceCallId, genesysInteractionId, User_Id) => ({
 		CardId: Card_id,
-		voiceCallId: voiceCallId,
+		VoiceCallId: voiceCallId,
 		GenesysInteractionId: genesysInteractionId,
 		User_Id: User_Id
 	}),
 	splunk_agentAssistScrolled: (voiceCallId, genesysInteractionId, User_Id, messageText) => ({
-		voiceCallId: voiceCallId,
+		VoiceCallId: voiceCallId,
 		GenesysInteractionId: genesysInteractionId,
 		User_Id: User_Id,
 		Scrolled: messageText
 	}),
 	splunk_agentAssist_linkClicked: (CardId, voiceCallId, genesysInteractionId, User_Id) => ({
 		Card_Id: CardId,
-		voiceCallId: voiceCallId,
+		VoiceCallId: voiceCallId,
 		GenesysInteractionId: genesysInteractionId,
 		User_Id: User_Id
 	}),

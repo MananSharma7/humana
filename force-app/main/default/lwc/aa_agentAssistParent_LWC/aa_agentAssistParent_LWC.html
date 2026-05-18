@@ -50,22 +50,22 @@
 				<div class={outerContainerClass}>
 					<!-- Vertical transcript tab button (always visible) -->
 					<template if:true={isPopoutMode}>
-						<!-- <template if:true={showTranscriptButton}> -->
-						<button
-							class="transcript-tab-btn"
-							onclick={handleToggleTranscript}
-							title="Toggle Live Transcript"
-							aria-label="Toggle Live Transcript"
-							aria-pressed={showTranscript}
-						>
-							<lightning-icon
-								icon-name="utility:display_text"
-								size="x-small"
-								class="custom-icon-display_text"
-							></lightning-icon>
-							<span class="tab-label">Transcript</span>
-						</button>
-						<!-- </template> -->
+						<template if:true={showTranscriptButton}>
+							<button
+								class="transcript-tab-btn"
+								onclick={handleToggleTranscript}
+								title="Toggle Live Transcript"
+								aria-label="Toggle Live Transcript"
+								aria-pressed={showTranscript}
+							>
+								<lightning-icon
+									icon-name="utility:display_text"
+									size="x-small"
+									class="custom-icon-display_text"
+								></lightning-icon>
+								<span class="tab-label">Transcript</span>
+							</button>
+						</template>
 					</template>
 
 					<!-- Live Transcript Panel (overlays main panels) — kept in DOM to preserve state -->

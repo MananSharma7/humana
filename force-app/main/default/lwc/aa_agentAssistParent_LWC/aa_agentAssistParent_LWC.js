@@ -25,8 +25,7 @@ import getAzureCallout from '@salesforce/apex/AA_AzureOAuthGraphCallout.getAzure
 import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAccess';
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
-import AA_SESSION_ID from '@salesforce/schema/VoiceCall.AgentAssist_Session_ID__c';
-// import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
+import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
@@ -38,7 +37,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	intContErrorMessage = null;
 	isCustContextError = false;
 	custContErrorMessage = null;
-	// isLiveTranscriptEnabled = false;
+	isLiveTranscriptEnabled = false;
 
 	@wire(MessageContext) messageContext;
 
@@ -66,6 +65,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	relatedRecordId;
 	voiceCallId;
 	interactingAboutMemberId = null;
+	aaSessionId;
 
 	genesysData;
 	_recordId;
@@ -365,6 +365,21 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | set_interaction_context');
 					this.sendInteractionContext(message.data);
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_logging_context(
+							'INFO',
+							'aa_agentAssistParent_LWC.js',
+							'handleAgentAssistMessage(SET_INTERACTION_CONTEXT)',
+							'Interaction Context Set',
+							undefined,
+							AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								localStorage.getItem('agentAssistVoiceCallId')
+							),
+							USER_RECORD_ID
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
 					break;
@@ -391,7 +406,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 							);
 						}
 					}
-
 					break;
 				case AgentAssistLabels.ASK_ME_ANYTHING_QUERY:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | ask_me_anything_query');
@@ -1188,6 +1202,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		let agentAssistSessionId = this.isErrorFrameworkEnabled
 			? data?.data?.agent_assist_session_id
 			: data.agent_assist_session_id;
+		this.aaSessionId = agentAssistSessionId;
 		console.log(
 			'aa_agentAssistParent_LWC | UpdateVoiceCallSessionId | before runVoiceCallSessionFlow | Session ID:' +
 				data.agent_assist_session_id +
@@ -1205,12 +1220,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	sendKnowledgeCardFeedback(data) {
-		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | data: ' + JSON.stringify(data));
-
-		if (data && data.event_type === 'pcs_feedback_event') {
-			this.websocket.emitEvent('pcs_feedback_event', data);
-			return;
-		}
+		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | data: ' + data);
 
 		let datum = data?.data;
 		let feedback_value = data?.data?.feedback?.rating;
@@ -1278,11 +1288,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				'aa_agentAssistParent_LWC.js',
 				'sendAMAQuery',
 				'Ask Me Anything Request Submitted',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
+				undefined,
 				AgentAssistSplunkLoggingUtils.splunk_question_message(
 					localStorage.getItem('agentAssistGenesysInteractionId'),
-					'placeholder',
-					data?.data?.content?.query?.text,
+					localStorage.getItem('agentAssistVoiceCallId'),
 					isReply
 				),
 				USER_RECORD_ID
@@ -1498,7 +1507,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 
-	/* @wire(isFeatureEnabled, { featureName: 'AA_Live_Transcription' })
+	@wire(isFeatureEnabled, { featureName: 'AA_Live_Transcription' })
 	wired({ error, data }) {
 		if (data) {
 			this.isLiveTranscriptEnabled = data;
@@ -1507,7 +1516,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
-	get showTranscriptButton(){
+	get showTranscriptButton() {
 		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
-	} */
+	}
 }

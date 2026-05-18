@@ -45,6 +45,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 	Name_consumer = 'Brian';
 	cardMap = new Map();
 
+	aaSessionId;
+
 	get error() {
 		return this.errorMessage ? true : false;
 	}
@@ -200,17 +202,17 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
+
 					let splunkJsonString = JSON.stringify(
 						AgentAssistSplunkLoggingUtils.splunk_logging_context(
 							'INFO',
 							'aa_knowledgeMessage.js',
 							'prepareAskMeAnything',
 							'Ask Me Anything Card Completed',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
+							undefined,
 							AgentAssistSplunkLoggingUtils.splunk_card_message(
 								localStorage.getItem('agentAssistGenesysInteractionId'),
-								'placeholder',
-								content?.header,
+								localStorage.getItem('agentAssistVoiceCallId'),
 								cardMetadata?.card_id
 							),
 							userId
@@ -239,11 +241,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 							'aa_knowledgeMessage.js',
 							'prepareAskMeAnything',
 							'Ask Me Anything Card Abandoned',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
+							undefined,
 							AgentAssistSplunkLoggingUtils.splunk_card_message(
 								localStorage.getItem('agentAssistGenesysInteractionId'),
-								'placeholder',
-								content?.header,
+								localStorage.getItem('agentAssistVoiceCallId'),
 								cardMetadata?.card_id
 							),
 							userId
