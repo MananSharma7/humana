@@ -187,6 +187,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	}
 
 	get isShowAMA() {
+		console.log('isShowAMA---->' + this.isAMAEnabled && this.showAMA);
 		return this.isAMAEnabled && this.showAMA;
 	}
 

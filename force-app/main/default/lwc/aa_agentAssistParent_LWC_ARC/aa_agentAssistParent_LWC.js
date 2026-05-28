@@ -17,7 +17,7 @@ import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getR
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
 import PROXY_CHANNEL from '@salesforce/messageChannel/AgentAssistLWCMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
-import { EnclosingUtilityId, updateUtility, open, getInfo } from 'lightning/platformUtilityBarApi';
+import { EnclosingUtilityId, updateUtility, open } from 'lightning/platformUtilityBarApi';
 import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_SSO';
 import { AgentAssist_Labels, AuthErrorClass } from './layoutConfig';
 import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSOAccessToken';
@@ -26,9 +26,9 @@ import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAcces
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
-import userId from '@salesforce/user/Id';
+import UTILITY_POPOUT_CHANNEL from '@salesforce/messageChannel/UtilityPopoutMessageChannel__c';
 
-export default class Aa_agentAssistParent_LWC extends LightningElement {
+export default class Aa_agentAssistParent_LWC_ARC extends LightningElement {
 	agentAssistLMSSubscription = null;
 	genesysLMSSubscription = null;
 	consumerSearchLMSSubscription = null;
@@ -70,11 +70,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	genesysData;
 	_recordId;
-
-	utilityVisibleState = null; // Tracks previous state
-	utilityPollingInterval = null; // Holds interval reference
-	isTabHidden = false;
-
 	//sso variables
 	objSSOCallout = null;
 	@track ssoMessage = '';
@@ -90,6 +85,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	tokenretrycount = 0;
 	stoppolling = false;
 	isTokenRefreshRequired = false;
+	channel = new BroadcastChannel('salesforce_window_channel');
 
 	@api
 	get recordId() {
@@ -164,10 +160,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.errorMessage = message;
 	}
 
-	@track isPopoutMode = false;
+	@track isPopoutMode = true;
 
 	get outerContainerClass() {
-		return this.isPopoutMode && this.showTranscript ? 'outer-container popout-split' : 'outer-container';
+		//return this.isPopoutMode && this.showTranscript ? 'outer-container popout-split' : 'outer-container';
+		return this.showTranscript ? 'outer-container popout-split' : 'outer-container';
 	}
 
 	get transcriptPanelClass() {
@@ -176,21 +173,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
-		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
-		if (this.isPopoutMode) {
-			this.popedOutSplunkLog();
-		}
-
-		//  Restart polling if interaction still active (fix for popout/reload)
-		if (localStorage.getItem('agentAssistGenesysInteractionId')) {
-			this.startUtilityMonitor();
-		}
-
-		this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
-		document.addEventListener('visibilitychange', this.handleVisibilityChange);
-		this.handleWindowClose = this.handleWindowClose.bind(this);
-		window.addEventListener('beforeunload', this.handleWindowClose);
-
+		//this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
 		this.updateStatus('default');
 		if (!this.recordId) {
 			const storedId = localStorage.getItem('agentAssistVoiceCallId');
@@ -400,8 +383,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						)
 					);
 					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-					this.handleGetUtilityInfo();
-					console.log('AA poped out handleGetUtilityInfo');
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
 					break;
@@ -541,7 +522,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				this.recordId = null;
 				this.relatedRecordId = null;
 
-				this.stopUtilityMonitor();
 				// Clear Session Storage
 				localStorage.removeItem('agentAssistVoiceCallId');
 				localStorage.removeItem('agentAssistGenesysInteractionId');
@@ -785,6 +765,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		console.log(
 			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails)
 		);
+
 		try {
 			this.voiceCallId = interactionDetails.Voice_Call__c;
 			this.recordId = interactionDetails.Voice_Call__c;
@@ -809,7 +790,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				});
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
-					this.handleOpenAAUtility();
+					//this.handleOpenAAUtility();
 				}
 			} else {
 				this.websocket.emitEvent(
@@ -830,7 +811,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				});
 
 				if (interactionDetails.Call_Disposition__c !== 'completed') {
-					this.handleOpenAAUtility();
+					//this.handleOpenAAUtility();
 				}
 			}
 			LWCLogger({
@@ -1304,20 +1285,20 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			source: 'sendAMAQuery | Ask Me Anything',
 			level: 'info'
 		});
+
 		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_agentAssistParent_LWC.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				USER_RECORD_ID,
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
 				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(
+				'aa_agentAssistParent_LWC.js',
+				'sendAMAQuery',
+				'Ask Me Anything Request Submitted',
+				undefined,
+				AgentAssistSplunkLoggingUtils.splunk_question_message(
+					localStorage.getItem('agentAssistGenesysInteractionId'),
 					localStorage.getItem('agentAssistVoiceCallId'),
-					undefined,
-					undefined,
-					undefined,
 					isReply
 				),
-				'AskMeAnythingRequestSubmitted'
+				USER_RECORD_ID
 			)
 		);
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
@@ -1334,34 +1315,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			try {
 				if (this.showTranscript) {
 					window.resizeBy(450, 0);
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_agentAssistParent_LWC.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							USER_RECORD_ID,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'LiveTranscriptExpanded'
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 				} else {
 					window.resizeBy(-450, 0);
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_agentAssistParent_LWC.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							USER_RECORD_ID,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'LiveTranscriptCollapsed'
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 				}
 			} catch (e) {
 				console.error('Failed to resize window: ', e);
@@ -1554,8 +1509,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			)
 		);
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-
-		this.startUtilityMonitor();
 	}
 
 	@wire(isFeatureEnabled, { featureName: 'AA_Live_Transcription' })
@@ -1570,144 +1523,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	get showTranscriptButton() {
 		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
-	//new
-	popedOutSplunkLog() {
-		console.log('AA poped out');
-		try {
-			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_agentAssistParentLWC.js',
-					interactionId,
-					userId,
-					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
-					'AA_PopedOut'
-				)
-			);
-
-			LWCSplunkLogger({
-				jsonString: splunkJsonString,
-				eventName: 'AgentAssistUsageEvent'
-			});
-		} catch (error) {
-			console.error('Error logging AA_PopedOutMode', error);
-		}
-	}
-
-	async handleGetUtilityInfo() {
-		console.log('AA poped out Inside handleGetUtilityInfo');
-		try {
-			if (!this.utilityId) {
-				return;
-			}
-			const utilityInfo = await getInfo(this.utilityId);
-			console.log(' AA poped out utilityInfo : ', utilityInfo.utilityPoppedOut);
-			if (utilityInfo.utilityPoppedOut) {
-				this.popedOutSplunkLog();
-			}
-		} catch (error) {
-			// handle error
-		}
-	}
-
-	startUtilityMonitor() {
-		//Prevent multiple intervals
-		if (this.utilityPollingInterval || !this.utilityId) {
-			return;
-		}
-
-		//  only start if interaction exists
-		const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-
-		if (!interactionId) {
-			console.log(' No active interaction → skipping polling');
-			return;
-		}
-
-		console.log('Starting utility polling');
-
-		this.utilityPollingInterval = setInterval(() => {
-			this.checkUtilityVisibility();
-			console.log('Polling started startUtilityMonitor');
-		}, 3000);
-	}
-
-	async checkUtilityVisibility() {
-		try {
-			const utilityInfo = await getInfo(this.utilityId);
-			const currentState = utilityInfo?.utilityVisible;
-
-			//  ONLY detect visible → hidden
-			if (
-				!this.isTabHidden &&
-				this.utilityVisibleState !== null &&
-				this.utilityVisibleState === true &&
-				currentState === false
-			) {
-				this.logAAMinimized('AA_Minimised');
-			}
-
-			this.utilityVisibleState = currentState;
-		} catch (error) {
-			console.error('Error checking utility visibility', error);
-		}
-	}
 
 	disconnectedCallback() {
-		this.stopUtilityMonitor();
-		document.removeEventListener('visibilitychange', this.handleVisibilityChange);
-
-		window.removeEventListener('beforeunload', this.handleWindowClose);
+		/*const payLoad =  { 
+					status:true 
+				};
+				
+		publish(this.messageContext, UTILITY_POPOUT_CHANNEL, payLoad);
+		console.log('Published AA closed message-->'+payLoad);*/
+		console.log('Window closed');
 	}
 
-	stopUtilityMonitor() {
-		if (this.utilityPollingInterval) {
-			clearInterval(this.utilityPollingInterval);
-			this.utilityPollingInterval = null;
-			console.log('Utility pooling closed');
-		}
-	}
-
-	logAAMinimized(reason) {
-		try {
-			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
-
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_agentAssistParentLWC.js',
-					interactionId,
-					userId,
-					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
-					reason
-				)
-			);
-
-			LWCSplunkLogger({
-				jsonString: splunkJsonString,
-				eventName: 'AgentAssistUsageEvent'
-			});
-
-			console.log('AA_Minimised logged:', reason, ' data : ', splunkJsonString);
-		} catch (e) {
-			console.error(e);
-		}
-	}
-
-	handleVisibilityChange() {
-		if (document.hidden && this.isPopoutMode) {
-			this.isTabHidden = true;
-			this.logAAMinimized('AA_Minimisedtab switch');
-		} else {
-			this.isTabHidden = false;
-		}
-	}
-	handleWindowClose() {
-		if (this.isPopoutMode) {
-			this.logAAMinimized('AA_WINDOW_CLOSE');
-		}
+	closeWindow() {
+		this.channel.postMessage({ action: 'WINDOW_CLOSED' });
+		window.close();
 	}
 }

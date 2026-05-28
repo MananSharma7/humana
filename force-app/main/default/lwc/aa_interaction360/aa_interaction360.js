@@ -130,6 +130,21 @@ export default class Aa_interaction360 extends LightningElement {
 					break;
 				case AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY:
 					this.prepareIntHistoryDataLayout(message);
+					if (this.callHistories == 0) {
+						let splunkJsonString = JSON.stringify(
+							AgentAssistSplunkLoggingUtils.splunk_outer_context(
+								'aa_interaction360.js',
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								userId,
+								'INFO',
+								AgentAssistSplunkLoggingUtils.splunk_inner_context(
+									localStorage.getItem('agentAssistVoiceCallId')
+								),
+								'Interaction360NoDataToDisplay'
+							)
+						);
+						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					}
 					break;
 				case AgentAssistLabels.ERROR:
 					this.showError('We are unable to retrieve Interaction360');
@@ -354,6 +369,18 @@ export default class Aa_interaction360 extends LightningElement {
 		if (isNaN(number)) return;
 
 		this.callHistories[number].isExpanded = !this.callHistories[number].isExpanded;
+
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
+				'aa_interaction360.js',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(localStorage.getItem('agentAssistVoiceCallId')),
+				'Interaction360ChevronClicked'
+			)
+		);
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 
 	@wire(isFeatureEnabled, { featureName: 'MP_Interaction_360' })

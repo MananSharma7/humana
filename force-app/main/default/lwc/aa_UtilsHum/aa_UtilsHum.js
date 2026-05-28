@@ -233,17 +233,15 @@ export default class AgentAssistWebsocket {
 									level: 'info'
 								});
 								let splunkJsonString = JSON.stringify(
-									AgentAssistSplunkLoggingUtils.splunk_logging_context(
-										'INFO',
+									AgentAssistSplunkLoggingUtils.splunk_outer_context(
 										'aa_UtilsHum.js',
-										'websocket.on(HSTORICAL_INTERACTION_SUMMARY)',
-										'Interaction360 Available',
-										undefined,
-										AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
-											localStorage.getItem('agentAssistGenesysInteractionId'),
+										localStorage.getItem('agentAssistGenesysInteractionId'),
+										this.userId,
+										'INFO',
+										AgentAssistSplunkLoggingUtils.splunk_inner_context(
 											localStorage.getItem('agentAssistVoiceCallId')
 										),
-										this.userId
+										'Interaction360Available'
 									)
 								);
 								LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
@@ -1064,5 +1062,44 @@ export const AgentAssistSplunkLoggingUtils = {
 	}),
 	splunk_websocket_message: (salesforce_user_id) => ({
 		SalesforceUserId: salesforce_user_id
+	}),
+	splunk_pcs_interaction_message: (card_id, voiceCallId, genesysInteractionId, userId, actionType, status) => ({
+		CardId: card_id,
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId,
+		User_Id: userId,
+		ActionType: actionType,
+		Status: status
+	}),
+	splunk_pcs_call_level_message: (voiceCallId, genesysInteractionId, userId, pcsOccurred) => ({
+		voiceCallId: voiceCallId,
+		GenesysInteractionId: genesysInteractionId,
+		User_Id: userId,
+		PostCallSummaryOccurred: pcsOccurred ? 'TRUE' : 'FALSE'
+	}),
+
+	splunk_outer_context: (
+		triggering_component,
+		genesys_interaction_id,
+		salesforce_user_id,
+		event_type,
+		inner_context,
+		event_title
+	) => ({
+		ComponentName: triggering_component,
+		GenesysInteractionId: genesys_interaction_id,
+		DateTime: new Date().toLocaleString('en-US'),
+		SalesforceUserId: salesforce_user_id,
+		LogEventType: event_type,
+		Message: inner_context,
+		TransactionName: event_title
+	}),
+
+	splunk_inner_context: (voice_call_id, card_id, scrolled, ama_query, is_reply) => ({
+		VoiceCallId: voice_call_id,
+		Scrolled: scrolled,
+		AskMeAnythingQuery: ama_query,
+		CardId: card_id,
+		IsReply: is_reply
 	})
 };

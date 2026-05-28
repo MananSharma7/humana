@@ -46,6 +46,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 	cardMap = new Map();
 
 	aaSessionId;
+	pcsViewedLoggedSet = new Set();
+	pcsObserver = null;
+
+	loggedCards = new Set();
 
 	get error() {
 		return this.errorMessage ? true : false;
@@ -119,11 +123,79 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		}
 	}
 
+	renderedCallback() {
+		this.setupPCSIntersectionObserver();
+	}
+
+	setupPCSIntersectionObserver() {
+		try {
+			const summaryCards = this.cards.filter((c) => c.isSummary && !this.pcsViewedLoggedSet.has(c.card_id));
+			if (summaryCards.length === 0) {
+				return;
+			}
+
+			if (!this.pcsObserver) {
+				this.pcsObserver = new IntersectionObserver(
+					(entries) => {
+						entries.forEach((entry) => {
+							if (entry.isIntersecting) {
+								const cardId = entry.target.dataset.cardId;
+								const card = this.cards.find((c) => c.card_id == cardId);
+								if (card && card.isSummary && !this.pcsViewedLoggedSet.has(cardId)) {
+									this.pcsViewedLoggedSet.add(cardId);
+									this.pcsObserver.unobserve(entry.target);
+
+									const statusString = card.isSumError ? 'failed' : 'success';
+									let splunkJsonString = JSON.stringify(
+										AgentAssistSplunkLoggingUtils.splunk_logging_context(
+											'INFO',
+											'aa_knowledgeMessage.js',
+											'PCS_viewed',
+											'PCS Interaction Event',
+											localStorage.getItem('agentAssistGenesysInteractionId'),
+											AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
+												cardId,
+												localStorage.getItem('agentAssistVoiceCallId'),
+												localStorage.getItem('agentAssistGenesysInteractionId'),
+												userId,
+												'PCS_viewed',
+												statusString
+											),
+											userId
+										)
+									);
+									LWCSplunkLogger({
+										jsonString: splunkJsonString,
+										eventName: 'AgentAssistUsageEvent'
+									});
+								}
+							}
+						});
+					},
+					{ threshold: 0.1 }
+				);
+			}
+
+			summaryCards.forEach((card) => {
+				const cardEl = this.template.querySelector(`[data-card-id="${card.card_id}"]`);
+				if (cardEl) {
+					this.pcsObserver.observe(cardEl);
+				}
+			});
+		} catch (error) {
+			console.error('Error in setupPCSIntersectionObserver', error);
+		}
+	}
+
 	disconnectedCallback() {
 		console.log('Disconnected from webhook!!');
 		if (this.mockSubscription) {
 			unsubscribe(this.mockSubscription);
 			this.mockSubscription = null;
+		}
+		if (this.pcsObserver) {
+			this.pcsObserver.disconnect();
+			this.pcsObserver = null;
 		}
 	}
 
@@ -202,23 +274,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
-
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_logging_context(
-							'INFO',
-							'aa_knowledgeMessage.js',
-							'prepareAskMeAnything',
-							'Ask Me Anything Card Completed',
-							undefined,
-							AgentAssistSplunkLoggingUtils.splunk_card_message(
-								localStorage.getItem('agentAssistGenesysInteractionId'),
-								localStorage.getItem('agentAssistVoiceCallId'),
-								cardMetadata?.card_id
-							),
-							userId
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 					break;
 				case 'abandoned':
 					isAbandoned = true;
@@ -235,22 +290,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
-					let splunkJsonStringAbandoned = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_logging_context(
-							'INFO',
-							'aa_knowledgeMessage.js',
-							'prepareAskMeAnything',
-							'Ask Me Anything Card Abandoned',
-							undefined,
-							AgentAssistSplunkLoggingUtils.splunk_card_message(
-								localStorage.getItem('agentAssistGenesysInteractionId'),
-								localStorage.getItem('agentAssistVoiceCallId'),
-								cardMetadata?.card_id
-							),
-							userId
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonStringAbandoned, eventName: 'AgentAssistUsageEvent' });
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -354,6 +393,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
 				const isMinimized = !card.isMinimized;
+				this.logCardExpandCollapse(card, !isMinimized);
 				return {
 					...card,
 					isMinimized: isMinimized,
@@ -428,6 +468,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareKnowledgeCard | Knowledge Cards',
 						level: 'info'
 					});
+
+					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'completed');
 					break;
 				case 'abandoned':
 					isAbandoned = true;
@@ -444,6 +486,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareKnowledgeCard | Knowledge Cards',
 						level: 'info'
 					});
+					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'abandoned');
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -577,6 +620,27 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				source: 'prepareKnowledgeCard | Post Call Summary',
 				level: 'info'
 			});
+
+			const statusString = card.isSumError ? 'failed' : 'success';
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_logging_context(
+					'INFO',
+					'aa_knowledgeMessage.js',
+					'preparePostCallSummary',
+					'PCS Interaction Event',
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
+						card.card_id,
+						localStorage.getItem('agentAssistVoiceCallId'),
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						userId,
+						'PCS_generated',
+						statusString
+					),
+					userId
+				)
+			);
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 		} catch (error) {
 			this.showError('We are unable to retrieve Summary at this time');
 		}
@@ -596,6 +660,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				console.log('handleInteractionContext: New Interaction ID detected. Clearing old knowledge cards.');
 				this.cards = [];
 				localStorage.removeItem('aa_knowledge_cards_cache');
+				this.loggedCards.clear();
 			}
 
 			this.interactionId = newInteractionId;
@@ -660,11 +725,32 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('clearCards: No message data provided to verify ID.');
 		}
 		console.log('clearCards: CLEARING DATA NOW.');
+
+		const pcsOccurred = this.cards.some((c) => c.isSummary && !c.isSumError);
+		let callLevelSplunkString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+				'INFO',
+				'aa_knowledgeMessage.js',
+				'Call Level Summary Check',
+				'PCS Call Level Event',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				AgentAssistSplunkLoggingUtils.splunk_pcs_call_level_message(
+					localStorage.getItem('agentAssistVoiceCallId'),
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId,
+					pcsOccurred
+				),
+				userId
+			)
+		);
+		LWCSplunkLogger({ jsonString: callLevelSplunkString, eventName: 'AgentAssistUsageEvent' });
+
 		this.cards = [];
 		this.interactionId = null;
 
 		localStorage.removeItem('aa_knowledge_cards_cache');
 		localStorage.removeItem('aa_knowledge_interaction_id');
+		this.loggedCards.clear();
 
 		this.saveState();
 
@@ -799,6 +885,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			return card;
 		});
 	}
+
 	handleIconClick(event) {
 		event.stopPropagation();
 		this.toggleExpand(event);
@@ -1079,12 +1166,34 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const card = this.cards.find((c) => c.card_id == cardId);
 		if (!card) return;
 
+		if (card.isSummary) {
+			const statusString = card.isSumError ? 'failed' : 'success';
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_logging_context(
+					'INFO',
+					'aa_knowledgeMessage.js',
+					'handleCopy PCS',
+					'PCS Interaction Event',
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
+						cardId,
+						localStorage.getItem('agentAssistVoiceCallId'),
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						userId,
+						'PCS_copied',
+						statusString
+					),
+					userId
+				)
+			);
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			return;
+		}
+
 		let cardType = 'handleCopy KnowledgeCard';
 
 		if (card.card_AMA) {
 			cardType = 'handleCopy AMA';
-		} else if (card.isSummary) {
-			cardType = 'handleCopy PCS';
 		}
 
 		let splunkJsonString = JSON.stringify(
@@ -1118,28 +1227,102 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const card = this.cards.find((c) => c.card_id == cardId);
 		if (!card) return;
 
-		let cardType = 'handleLinkClick KnowledgeCard';
+		let cardType = 'KnowledgeCard_LinkClicked';
+		const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+		const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
 
 		if (card.card_AMA) {
-			cardType = 'handleLinkClick AMA';
+			cardType = 'AMA_LinkClicked';
 		}
 
 		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_logging_context(
-				'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
 				'aa_knowledgeMessage.js',
-				cardType,
-				'AA LinkClicked',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				AgentAssistSplunkLoggingUtils.splunk_agentAssist_linkClicked(
-					cardId,
-					localStorage.getItem('agentAssistVoiceCallId'),
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId
-				)
+				interactionId,
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, card.card_id),
+				cardType
 			)
 		);
 
-		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		LWCSplunkLogger({
+			jsonString: splunkJsonString,
+			eventName: 'AgentAssistUsageEvent'
+		});
+	}
+
+	logKnowledgeCardToSplunk(cardId, status) {
+		try {
+			if (!cardId) return;
+
+			if (this.loggedCards.has(cardId)) {
+				return;
+			}
+
+			this.loggedCards.add(cardId);
+
+			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
+
+			const statusLabel = status === 'completed' ? 'Completed' : 'Abandoned';
+			const logtype = status === 'completed' ? 'INFO' : 'WARN';
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
+					'aa_knowledgeMessage.js',
+					interactionId,
+					userId,
+					logtype,
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, cardId),
+					'KnowledgeCard_' + statusLabel
+				)
+			);
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		} catch (error) {
+			console.error('Error logging Knowledge Card', error);
+		}
+	}
+
+	logCardExpandCollapse(card, isExpanded) {
+		try {
+			if (!card || !card.card_id) {
+				return;
+			}
+			console.log('logCardExpandCollapse  ');
+			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
+
+			let cardType = 'KnowledgeCard';
+
+			if (card.card_AMA) {
+				cardType = 'AMA';
+			} else if (card.isSummary) {
+				cardType = 'PCS';
+			}
+
+			const action = isExpanded ? 'Expanded' : 'Collapsed';
+
+			const eventLabel = `${cardType}_${action}`;
+			console.log('logCardExpandCollapse : ', eventLabel);
+
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
+					'aa_knowledgeMessage.js',
+					interactionId,
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, card.card_id),
+					eventLabel
+				)
+			);
+
+			LWCSplunkLogger({
+				jsonString: splunkJsonString,
+				eventName: 'AgentAssistUsageEvent'
+			});
+			console.log('logCardExpandCollapse : completed');
+		} catch (error) {
+			console.error('Error logging expand/collapse', error);
+		}
 	}
 }
