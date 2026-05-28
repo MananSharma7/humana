@@ -896,6 +896,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
+				if (card.isSummary) {
+					return {
+						...card,
+						isLiked: true,
+						isDisLiked: false,
+
+						likeClass: 'like-green',
+						dislikeClass: '',
+
+						isLikeDisabled: 'opacity:1;',
+						isDislikeDisabled: 'opacity:0.4;',
+						showDislikeReasons: false
+					};
+				}
 				return {
 					...card,
 					isLiked: true,
@@ -1010,6 +1024,23 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					];
 				}
 
+				if (card.isSummary) {
+					return {
+						...card,
+						isLiked: false,
+						isDisLiked: true,
+
+						likeClass: '',
+						dislikeClass: 'dislike-red',
+
+						isLikeDisabled: 'opacity:0.4;',
+						isDislikeDisabled: 'opacity:1;',
+
+						disLikeReasons: reasons,
+						showDislikeReasons: true
+					};
+				}
+
 				return {
 					...card,
 					isLiked: false,
@@ -1087,6 +1118,17 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					buttonClass: reason.text === selectedReason ? 'slds-button_brand' : 'slds-button_neutral',
 					disabled: reason.text !== selectedReason
 				}));
+
+				if (card.isSummary) {
+					return {
+						...card,
+						disLikeReasons: updatedReasons,
+						showDislikeReasons: false,
+						dislikeClass: 'dislike-red',
+						isLikeDisabled: 'opacity:0.4;',
+						isDislikeDisabled: 'opacity:1;'
+					};
+				}
 
 				return {
 					...card,
