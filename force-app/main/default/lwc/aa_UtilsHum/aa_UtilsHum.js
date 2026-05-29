@@ -1095,11 +1095,23 @@ export const AgentAssistSplunkLoggingUtils = {
 		TransactionName: event_title
 	}),
 
-	splunk_inner_context: (voice_call_id, card_id, scrolled, ama_query, is_reply) => ({
+	splunk_inner_context: (
+		voice_call_id,
+		scrolled,
+		ama_query,
+		card_id,
+		is_reply,
+		action_type,
+		status,
+		pcs_occurred
+	) => ({
 		VoiceCallId: voice_call_id,
 		Scrolled: scrolled,
 		AskMeAnythingQuery: ama_query,
 		CardId: card_id,
-		IsReply: is_reply
+		IsReply: is_reply,
+		ActionType: action_type,
+		Status: status,
+		PostCallSummaryOccurred: pcs_occurred !== undefined ? (pcs_occurred ? 'TRUE' : 'FALSE') : undefined
 	})
 };

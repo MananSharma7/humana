@@ -5,7 +5,7 @@ import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint
 import { publish, subscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import AgentAssistWebsocket from 'c/aa_UtilsHum';
 import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
-import { AgentAssistLabels, AgentAssistEvents, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
+import { AgentAssistLabels, AgentAssistEvents , AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
 import MessageChannel from '@salesforce/messageChannel/mp_ConsumerSearch_MessageChannel__c';
 import USER_RECORD_ID from '@salesforce/user/Id';
 import USER_ID from '@salesforce/schema/User.Id';
@@ -28,6 +28,7 @@ import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLoggi
 import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 import userId from '@salesforce/user/Id';
 
+
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
 	genesysLMSSubscription = null;
@@ -43,7 +44,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	@wire(MessageContext) messageContext;
 
 	@wire(EnclosingUtilityId)
-	utilityId;
+    utilityId;
 
 	socketIo;
 	websocket = new AgentAssistWebsocket();
@@ -70,26 +71,26 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	genesysData;
 	_recordId;
-
-	utilityVisibleState = null; // Tracks previous state
-	utilityPollingInterval = null; // Holds interval reference
-	isTabHidden = false;
-
+	
+	utilityVisibleState = null;      // Tracks previous state
+	utilityPollingInterval = null;   // Holds interval reference
+	isTabHidden = false; 
+	
 	//sso variables
-	objSSOCallout = null;
-	@track ssoMessage = '';
-	@track showSSOMessage = false;
-	isRecoverableError = true;
-	authretrycount = 0;
-	autherrornotificationmessage = '';
-	currentmemeberenterpriseid = null;
-	currentmembertype = null;
-	isRefresh = false;
-	correlationId = '';
-	authWindow = null;
-	tokenretrycount = 0;
-	stoppolling = false;
-	isTokenRefreshRequired = false;
+    objSSOCallout = null;
+    @track ssoMessage = '';
+    @track showSSOMessage = false;
+    isRecoverableError = true;
+    authretrycount = 0;
+    autherrornotificationmessage = '';
+    currentmemeberenterpriseid = null;
+    currentmembertype = null;
+    isRefresh = false;
+    correlationId = '';
+    authWindow = null;
+    tokenretrycount = 0;
+    stoppolling = false;
+    isTokenRefreshRequired = false;
 
 	@api
 	get recordId() {
@@ -177,7 +178,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
 		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
-		if (this.isPopoutMode) {
+		if(this.isPopoutMode){
 			this.popedOutSplunkLog();
 		}
 
@@ -185,12 +186,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		if (localStorage.getItem('agentAssistGenesysInteractionId')) {
 			this.startUtilityMonitor();
 		}
+		
 
 		this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
 		document.addEventListener('visibilitychange', this.handleVisibilityChange);
 		this.handleWindowClose = this.handleWindowClose.bind(this);
 		window.addEventListener('beforeunload', this.handleWindowClose);
-
+		
 		this.updateStatus('default');
 		if (!this.recordId) {
 			const storedId = localStorage.getItem('agentAssistVoiceCallId');
@@ -223,13 +225,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				'aa_agentAssistParent_LWC|connectedCallback before revokeAccessAndFecthNewToken authProviderUrl:',
 				azureConfig.authProviderUrl
 			);
-			this.objSSOCallout = {};
+			this.objSSOCallout =  {};
 			this.objSSOCallout['url'] = azureConfig.authProviderUrl;
 			this.objSSOCallout['contenttype'] = azureConfig.loginContent;
-			this.revokeAccessAndFecthNewToken();
+            this.revokeAccessAndFecthNewToken();
 		} else {
 			this.accessToken = await getAccessToken();
-		}
+            }
 		if (Array.isArray(this.accessToken)) {
 			this.accessToken = this.accessToken[0];
 		}
@@ -258,7 +260,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				PROXY_CHANNEL,
 				(message) => {
 					console.log('aa_agentAssistParent_LWC:Proxy LMS Message Received:', JSON.stringify(message));
-					//Check this
+					//Check this 
 					if (
 						message &&
 						message.data &&
@@ -330,7 +332,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			if (callDisposition && callDisposition.toLowerCase() === 'completed') {
 				console.log('aa_agentAssistParent_LWC:Parent LWC Ending interaction (PLATFORM EVENT)');
 				this.websocket.endInteraction(interactionId);
-
+				
 				const endMsg = {
 					type: AgentAssistLabels.END_INTERACTION,
 					data: {
@@ -385,21 +387,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | set_interaction_context');
 					this.sendInteractionContext(message.data);
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_logging_context(
-							'INFO',
-							'aa_agentAssistParent_LWC.js',
-							'handleAgentAssistMessage(SET_INTERACTION_CONTEXT)',
-							'Interaction Context Set',
-							undefined,
-							AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
-								localStorage.getItem('agentAssistGenesysInteractionId'),
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							USER_RECORD_ID
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
+						'INFO',
+						'aa_agentAssistParent_LWC.js',
+						'handleAgentAssistMessage(SET_INTERACTION_CONTEXT)',
+						'Interaction Context Set',
+						undefined,
+						AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
+							localStorage.getItem('agentAssistGenesysInteractionId'),
+							localStorage.getItem('agentAssistVoiceCallId')
+						),
+						USER_RECORD_ID
+					));
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
 					this.handleGetUtilityInfo();
 					console.log('AA poped out handleGetUtilityInfo');
 					break;
@@ -414,19 +414,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					console.log('voiceCallId: ' + this.voiceCallId);
 					console.log('message.data: ' + JSON.stringify(message.data));
 					if (!this.isErrorFrameworkEnabled) {
-						try {
-							if (this.voiceCallId != null) {
-								this.updateVoiceCallSessionId(message.data);
-							}
-						} catch (e) {
-							console.log(
+					try {
+						if (this.voiceCallId != null) {
+							this.updateVoiceCallSessionId(message.data);
+						}
+					} catch (e) {
+						console.log(
 								'agentAssistUtilityPanel | handleAgentAssistMessage | setVoiceCallSessionId | error: ' +
 									e
 							);
 							this.showError(
 								'Agent Assist has been disabled while we investigate an error: ' + e.message
-							);
-						}
+						);
+					}
 					}
 					break;
 				case AgentAssistLabels.ASK_ME_ANYTHING_QUERY:
@@ -472,9 +472,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.handleSocketConnectionError();
 					break;
 				case AgentAssistLabels.CONNECT_NOTIFICATION:
-					this.updateStatus('connected');
+						this.updateStatus('connected');
 					this.handleConnectNotification(message.data, 'connect');
-					break;
+						break;
 				case AgentAssistLabels.TOKEN_EXPIRED:
 					this.handleTokenExpired();
 					break;
@@ -730,17 +730,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			sExceptionType: 'Component Error',
 			sErrorType: 'AgentAssistError'
 		});
-		LWCLogger({
-			messageText:
-				'AuthError occurred; Salesforce User Id: ' +
-				this.userSalesforceId +
-				'User Network Id: ' +
-				this.userNetworkId +
-				'; \n' +
-				JSON.stringify(objError),
-			source: 'aa_agentAssistParentLWC',
-			level: 'error'
-		});
+		LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
 	}
 
 	async initializeWebsocketAfterTokenRetrieval() {
@@ -756,14 +746,14 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			} else {
 				await this.websocket.setupWebSocketIoClient(arguments[0], this);
 				if (this.genesysInteractionId != null && this.genesysInteractionId != '') {
-					this.websocket.emitEvent(
-						AgentAssistLabels.SET_INTERACTION_CONTEXT,
-						AgentAssistEvents.set_interaction_context(
-							this.genesysInteractionId,
-							'',
-							this.userNetworkId,
-							'',
-							this.userSalesforceId
+				this.websocket.emitEvent(
+				AgentAssistLabels.SET_INTERACTION_CONTEXT,
+				AgentAssistEvents.set_interaction_context(
+					this.genesysInteractionId,
+					'',
+					this.userNetworkId,
+					'',
+					this.userSalesforceId
 						)
 					);
 					if (this.currentmemeberenterpriseid && currentmembertype) {
@@ -776,7 +766,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 								true
 							)
 						);
-					}
+			}
 				}
 			}
 		} catch (error) {}
@@ -808,18 +798,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					data: { genesysInteractionId: this.genesysInteractionId }
 				});
 
-				if (interactionDetails.Call_Disposition__c !== 'completed') {
+				if(interactionDetails.Call_Disposition__c!== 'completed')
+				{	
 					this.handleOpenAAUtility();
 				}
 			} else {
-				this.websocket.emitEvent(
-					AgentAssistLabels.SET_INTERACTION_CONTEXT,
-					AgentAssistEvents.set_interaction_context(
-						this.genesysInteractionId,
-						this.accessToken,
-						this.userNetworkId,
-						this.userEmail,
-						this.userSalesforceId
+			this.websocket.emitEvent(
+				AgentAssistLabels.SET_INTERACTION_CONTEXT,
+				AgentAssistEvents.set_interaction_context(
+					this.genesysInteractionId,
+					this.accessToken,
+					this.userNetworkId,
+					this.userEmail,
+					this.userSalesforceId
 					)
 				);
 
@@ -829,7 +820,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					data: { genesysInteractionId: this.genesysInteractionId }
 				});
 
-				if (interactionDetails.Call_Disposition__c !== 'completed') {
+				if(interactionDetails.Call_Disposition__c!== 'completed')
+				{	
 					this.handleOpenAAUtility();
 				}
 			}
@@ -891,7 +883,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 							source: 'sendCustomerContext | Send Customer Context',
 							level: 'error'
 						});
-					}
+						}
 					console.log(
 						'setCustomerContextData:' +
 							this.memberType +
@@ -914,7 +906,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	handleSocketConnectionError() {
-		let serr = `Websocket connection error for user : "${this.userSalesforceId}" at "${new Date()}"`;
+        let serr = `Websocket connection error for user : "${this.userSalesforceId}" at "${new Date()}"`;
 		let errobj = new AuthErrorClass().generaterrorobject(
 			false,
 			false,
@@ -924,22 +916,22 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			0,
 			0
 		);
-		this.displayAuthError(errobj);
-	}
+        this.displayAuthError(errobj);
+    }
 
-	handleTokenExpired() {
-		this.websocket.disconnect();
-		this.isTokenRefreshRequired = true;
-		this.fetchUserToken();
-	}
+    handleTokenExpired() {
+        this.websocket.disconnect();
+        this.isTokenRefreshRequired = true;
+        this.fetchUserToken();
+    }
 
-	handleConnectNotification() {
-		let data = arguments[0];
+    handleConnectNotification() {
+        let data = arguments[0];
 		if (arguments[1] == 'refresh' || arguments[1] == 'connect') {
 			if (data && data.error?.error_status) {
-				this.websocket.disconnect();
+                this.websocket.disconnect();
 				if (data.error?.code == 'AA-UIConnector-Auth-106' || data.error?.code == 'AA-UIConnector-Auth-204') {
-					let serr = `Security violation received for user : "${this.userSalesforceId}" at "${new Date()}" and AA message is "${data.error?.message}"`;
+                    let serr = `Security violation received for user : "${this.userSalesforceId}" at "${new Date()}" and AA message is "${data.error?.message}"`;
 					let errobj = new AuthErrorClass().generaterrorobject(
 						false,
 						false,
@@ -949,15 +941,15 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						0,
 						0
 					);
-					this.displayAuthError(errobj);
+                    this.displayAuthError(errobj);
 				} else {
-					this.authretrycount++;
+                    this.authretrycount++;
 					if (this.authretrycount < 3) {
-						this.autherrornotificationmessage += `${data.error?.message} `;
-						this.isTokenRefreshRequired = true;
-						this.fetchUserToken();
+                        this.autherrornotificationmessage += `${data.error?.message} `;
+                        this.isTokenRefreshRequired = true;
+                        this.fetchUserToken();
 					} else {
-						let serr = `Connection nofication error received for user : "${this.userSalesforceId}" at "${new Date()}" and AA message is "${this.autherrornotificationmessage}"`;
+                        let serr = `Connection nofication error received for user : "${this.userSalesforceId}" at "${new Date()}" and AA message is "${this.autherrornotificationmessage}"`;
 						let errobj = new AuthErrorClass().generaterrorobject(
 							false,
 							true,
@@ -967,45 +959,45 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 							0,
 							0
 						);
-						this.displayAuthError(errobj);
-						this.autherrornotificationmessage = '';
-						this.authretrycount = 0;
-					}
-				}
-			}
-		}
-	}
+                        this.displayAuthError(errobj);
+                        this.autherrornotificationmessage = '';
+                        this.authretrycount = 0;
+                    }
+                }
+            }
+        }
+    }
 
-	handleRefreshRequired() {
-		this.isRefresh = true;
-		this.isTokenRefreshRequired = true;
-		this.fetchUserToken();
-	}
+    handleRefreshRequired() {
+        this.isRefresh = true;
+        this.isTokenRefreshRequired = true;
+        this.fetchUserToken();
+    }
 
-	async revokeAccessAndFecthNewToken() {
-		let lstUserIds = [];
-		this.tokenretrycount = 0;
-		lstUserIds.push(this.userSalesforceId);
+    async revokeAccessAndFecthNewToken() {
+        let lstUserIds = [];
+        this.tokenretrycount = 0;
+        lstUserIds.push(this.userSalesforceId);
 		console.log('aa_agentAssistParent_LWC|revokeAccessAndFecthNewToken lstUserIds:', lstUserIds[0]);
 		await revokeAccess({ lstUserIds: lstUserIds });
 		console.log('aa_agentAssistParent_LWC|After rovokeAccess And before FecthNewToken');
-		this.fetchUserToken();
-	}
+        this.fetchUserToken();
+    }
 
-	startLoginFlow() {
+    startLoginFlow() {
 		if (this.authWindow && !this.authWindow.closed) {
 			LWCLogger({
 				messageText: 'Auth Window already open. Interaction ID: ' + this.genesysInteractionId,
 				source: 'Aa_agentAssistParent_LWC | StartLoginFlow ',
 				level: 'info'
 			});
-			return;
-		}
-		this.tokenretrycount++;
-		//Display an info message on UI.
-		this.ssoMessage = AgentAssist_Labels.SSO_Verification;
-		this.showSSOMessage = true;
-		this.stoppolling = false;
+            return;
+        }
+        this.tokenretrycount++;
+        //Display an info message on UI.
+        this.ssoMessage = AgentAssist_Labels.SSO_Verification;
+        this.showSSOMessage = true;
+        this.stoppolling = false;
 
 		let starturl = this.objSSOCallout.contenttype ? encodeURIComponent(this.objSSOCallout.contenttype) : '';
 		if (this.objSSOCallout.url && starturl) {
@@ -1015,21 +1007,21 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				'_blank',
 				AgentAssist_Labels.POPUP_OPTIONS
 			);
-			this.pollpopup();
-		}
-	}
+            this.pollpopup();
+        }
+    }
 
-	async fetchUserToken() {
-		let _this = this;
-		let stoken;
-		try {
+    async fetchUserToken() {
+        let _this = this;
+        let stoken;
+        try {
 			console.log('aa_agentAssistParent_LWC|fetchUserToken before getSSOAccessToken');
 			stoken = await getSSOAccessToken({ isRefresh: this.isTokenRefreshRequired });
 			if (stoken && stoken.length > 0) {
-				console.log('aa_agentAssistParent_LWC|fetchUserToken after getSSOAccessToken length:', stoken.length);
-				_this.resetAAParams();
+                console.log('aa_agentAssistParent_LWC|fetchUserToken after getSSOAccessToken length:', stoken.length);
+                _this.resetAAParams();
 				//_this.accessToken = stoken;
-				_this.initializeWebsocketAfterTokenRetrieval(stoken);
+                _this.initializeWebsocketAfterTokenRetrieval(stoken);
 			} else {
 				LWCLogger({
 					messageText:
@@ -1038,10 +1030,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					level: 'info'
 				});
 				if (this.tokenretrycount < 3) {
-					this.startLoginFlow();
+                   this.startLoginFlow();
 				} else {
-					this.resetAAParams();
-					let serr = `Token retrieval failed for user : "${this.userSalesforceId}" at "${new Date()}"`;
+                    this.resetAAParams();
+                    let serr = `Token retrieval failed for user : "${this.userSalesforceId}" at "${new Date()}"`;
 					let errobj = new AuthErrorClass().generaterrorobject(
 						false,
 						false,
@@ -1051,49 +1043,49 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						0,
 						0
 					);
-					this.displayAuthError(errobj);
-				}
-			}
-		} catch (error) {
+                    this.displayAuthError(errobj);
+                }
+            }
+       } catch (error) {
 			console.log('aa_agentAssistParent_LWC | error in getAccessToken----', JSON.parse(JSON.stringify(error)));
-			let sMessage = `Error occurred in fetchUserToken for Genesys Interaction id : ${this.genesysInteractionId} and  error message is : ${error.message}`;
+            let sMessage = `Error occurred in fetchUserToken for Genesys Interaction id : ${this.genesysInteractionId} and  error message is : ${error.message}`;
 			LWCLogger({ messageText: sMessage, source: 'aa_agentAssistParent_LWC: fetchUserToken', level: 'info' });
-		}
-	}
+       }
+    }
 
-	pollpopup() {
+    pollpopup() {
 		if (this.stoppolling) return;
 		if (!this.authWindow) return;
 		if (this.authWindow.closed) {
-			this.authWindow = null;
-			this.stoppolling = true;
-			this.fetchUserToken();
-			return;
-		}
-		setTimeout(this.pollpopup.bind(this), 3000);
-	}
+            this.authWindow = null;
+            this.stoppolling = true;
+            this.fetchUserToken();
+            return;
+        }
+        setTimeout(this.pollpopup.bind(this), 3000);
+    }
 
-	resetAAParams() {
-		this.ssoMessage = '';
-		this.showSSOMessage = false;
-		this.tokenretrycount = 0;
-		this.showAgentAssist = true;
-		this.errorMessage = '';
-		this.stoppolling = true;
-	}
+    resetAAParams() {
+        this.ssoMessage = '';
+        this.showSSOMessage = false;
+        this.tokenretrycount = 0;
+        this.showAgentAssist = true;
+        this.errorMessage = '';
+        this.stoppolling = true;
+    }
 
-	displayAuthError() {
-		let objError = arguments[0];
-		this.ssoMessage = objError.ssomessage;
-		this.showSSOMessage = objError.showssomessage;
-		this.showAgentAssist = objError.showAgentAssist;
-		this.isRecoverableError = objError.isRecoverableError;
-		this.errorMessage = objError.sUImessage;
-		this.tokenretrycount = objError.tokenretrycount;
-		this.authretrycount = objError.tokenauthretrycount;
+    displayAuthError() {
+        let objError = arguments[0];
+        this.ssoMessage = objError.ssomessage;
+        this.showSSOMessage = objError.showssomessage;
+        this.showAgentAssist = objError.showAgentAssist;
+        this.isRecoverableError = objError.isRecoverableError;
+        this.errorMessage = objError.sUImessage;
+        this.tokenretrycount = objError.tokenretrycount;
+        this.authretrycount = objError.tokenauthretrycount;
 		if (!this.isRecoverableError) this.unsubscribeToMessageChannel();
 
-		//Log error in CRM Error Log Object
+        //Log error in CRM Error Log Object
 		logError({
 			sMessage: objError.errorMessage,
 			sClass: objError.class,
@@ -1101,35 +1093,25 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			sExceptionType: 'Component Error',
 			sErrorType: 'AgentAssistError'
 		});
-		LWCLogger({
-			messageText:
-				'AuthError occurred; Salesforce User Id: ' +
-				this.userSalesforceId +
-				'User Network Id: ' +
-				this.userNetworkId +
-				'; \n' +
-				JSON.stringify(objError),
-			source: 'aa_agentAssistParentLWC',
-			level: 'error'
-		});
-	}
+		LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
+    }
 
-	async initializeWebsocketAfterTokenRetrieval() {
-		try {
-			this.isTokenRefreshRequired = false;
+    async initializeWebsocketAfterTokenRetrieval() {
+        try {
+            this.isTokenRefreshRequired = false;
 			if (this.isRefresh) {
-				this.isRefresh = false;
-				this.correlationId = `refresh_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                this.isRefresh = false;
+                this.correlationId = `refresh_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 				this.websocket.emitEvent(
 					AgentAssistLabels.REFRESH_TOKEN,
 					AgentAssistEvents.refresh_token(this.correlationId, arguments[0])
 				);
 			} else {
-				await this.websocket.setupWebSocketIoClient(arguments[0], this);
+                await this.websocket.setupWebSocketIoClient(arguments[0], this);
 				if (this.genesysInteractionId != null && this.genesysInteractionId != '') {
 					this.websocket.emitEvent(
 						AgentAssistLabels.SET_INTERACTION_CONTEXT,
-						AgentAssistEvents.set_interaction_context(
+						 AgentAssistEvents.set_interaction_context(
 							this.genesysInteractionId,
 							'',
 							this.userNetworkId,
@@ -1141,18 +1123,18 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.websocket.emitEvent(
 							AgentAssistLabels.SET_CUSTOMER_CONTEXT,
 							AgentAssistEvents.set_customer_context(
-								this.memberType,
-								this.sdrPersonId,
-								this.custId,
-								this.genesysInteractionId,
-								true
+									this.memberType,
+									this.sdrPersonId,
+									this.custId,
+									this.genesysInteractionId,
+									true
 							)
 						);
-					}
-				}
-			}
+                    }
+                }
+            }
 		} catch (error) {}
-	}
+    }
 	async sendCustomerContext(data) {
 		console.log(
 			'PLW inside sendcustomer agentAssistUtilityPanel | sendCustomerContext | data: ' + JSON.stringify(data)
@@ -1171,40 +1153,40 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					data.memberId !== undefined &&
 					data.sdrPersonId !== undefined
 				) {
-					this.memberId = data.memberId;
+						this.memberId = data.memberId;
 					this.sdrPersonId = this.currentmemeberenterpriseid = data.sdrPersonId;
 					this.memberType = this.currentmembertype = data.memberType;
-					this.custId = data.custId;
-					localStorage.setItem('agentAssistInteractingMemberId', this.memberId);
+						this.custId = data.custId;
+						localStorage.setItem('agentAssistInteractingMemberId', this.memberId);
 
-					console.log('aa_agentAssistParent_LWC | before websocket emit from send customer context in plwc');
+						console.log('aa_agentAssistParent_LWC | before websocket emit from send customer context in plwc');
 					if (this.isNotEmpty(this.sdrPersonId) && this.isNotEmpty(this.custId)) {
-						this.websocket.emitEvent(
-							AgentAssistLabels.SET_CUSTOMER_CONTEXT,
-							AgentAssistEvents.set_customer_context(
-								this.memberType,
-								this.sdrPersonId,
-								this.custId,
-								this.genesysInteractionId,
-								true
-							)
-						);
-						console.log('aa_agentAssistParent_LWC |Customer context sent');
-						return;
+							this.websocket.emitEvent(
+								AgentAssistLabels.SET_CUSTOMER_CONTEXT,
+								AgentAssistEvents.set_customer_context(
+									this.memberType,
+									this.sdrPersonId,
+									this.custId,
+									this.genesysInteractionId,
+									true
+								)
+							);
+							console.log('aa_agentAssistParent_LWC |Customer context sent');
+							return;
 					} else {
 						console.log('aa_agentAssistParent_LWC |Cust id or Sdr member id is null');
-					}
+						}
 				} else if (data.RelatedRecordId__c != null && data.RelatedRecordId__c != this.relatedRecordId) {
-					this.relatedRecordId = data.RelatedRecordId__c;
-					console.log('aa_agentAssistParent_LWC |sendCustomerContext: Using Related Record ID.');
-					this.getRelatedRecordDetails(data.RelatedRecordId__c);
-					return;
+						this.relatedRecordId = data.RelatedRecordId__c;
+						console.log('aa_agentAssistParent_LWC |sendCustomerContext: Using Related Record ID.');
+						this.getRelatedRecordDetails(data.RelatedRecordId__c);
+						return;
 				} else {
 					console.log(
 						'aa_agentAssistParent_LWC |sendCustomerContext: No explicit data provided. ' +
 							JSON.stringify(data)
 					);
-				}
+						}
 				console.log('aa_sendCustomerContext|END: Using provided explicit data.');
 				return;
 			}
@@ -1216,7 +1198,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			console.log('aa_agentAssistParent_LWC | sendCustomerContext | error: ' + e);
 		}
 	}
-
+	
 	isNotEmpty(value) {
 		return value !== null && value !== undefined && value !== '' && value.trim() !== '';
 	}
@@ -1245,6 +1227,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	sendKnowledgeCardFeedback(data) {
 		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | data: ' + data);
 
+		if (data && data.event_type === 'pcs_feedback_event') {
+			this.websocket.emitEvent('pcs_feedback_event', data);
+			return;
+		}
+		
 		let datum = data?.data;
 		let feedback_value = data?.data?.feedback?.rating;
 		let feedback_text = data?.data?.feedback?.feedback_text;
@@ -1304,23 +1291,21 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			source: 'sendAMAQuery | Ask Me Anything',
 			level: 'info'
 		});
-		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_agentAssistParent_LWC.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				USER_RECORD_ID,
-				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(
-					localStorage.getItem('agentAssistVoiceCallId'),
-					undefined,
-					undefined,
-					undefined,
-					isReply
-				),
-				'AskMeAnythingRequestSubmitted'
-			)
-		);
-		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+			'aa_agentAssistParent_LWC.js',
+			localStorage.getItem('agentAssistGenesysInteractionId'),
+			USER_RECORD_ID,
+			'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_inner_context(
+				localStorage.getItem('agentAssistVoiceCallId'),
+				undefined,
+				undefined,
+				undefined,
+				isReply
+			),
+			'AskMeAnythingRequestSubmitted'
+		));
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
 	}
 	handleExpand() {
 		setTimeout(() => {
@@ -1334,33 +1319,29 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			try {
 				if (this.showTranscript) {
 					window.resizeBy(450, 0);
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_agentAssistParent_LWC.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							USER_RECORD_ID,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'LiveTranscriptExpanded'
-						)
-					);
+					let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+						'aa_agentAssistParent_LWC.js',
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						USER_RECORD_ID,
+						'INFO',
+						AgentAssistSplunkLoggingUtils.splunk_inner_context(
+							localStorage.getItem('agentAssistVoiceCallId')
+						),
+						'LiveTranscriptExpanded'
+					));
 					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 				} else {
 					window.resizeBy(-450, 0);
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_agentAssistParent_LWC.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							USER_RECORD_ID,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'LiveTranscriptCollapsed'
-						)
-					);
+					let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+						'aa_agentAssistParent_LWC.js',
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						USER_RECORD_ID,
+						'INFO',
+						AgentAssistSplunkLoggingUtils.splunk_inner_context(
+							localStorage.getItem('agentAssistVoiceCallId')
+						),
+						'LiveTranscriptCollapsed'
+					));
 					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 				}
 			} catch (e) {
@@ -1385,41 +1366,41 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 	}
 	updateStatus(state) {
-		let attributes;
+        let attributes;
 
-		switch (state) {
-			case 'connected':
-				attributes = {
-					label: 'Agent Assist',
-					icon: 'success',
-					iconVariant: 'success',
-					highlighted: false
-				};
-				break;
+        switch (state) {
+            case 'connected':
+                attributes = {
+                    label: 'Agent Assist',
+                    icon: 'success',
+                    iconVariant: 'success',
+                    highlighted: false
+                };
+                break;
 
-			case 'disconnected':
-				attributes = {
-					label: 'Agent Assist',
-					icon: 'ban',
-					iconVariant: 'error',
-					highlighted: false
-				};
-				break;
+            case 'disconnected':
+                attributes = {
+                    label: 'Agent Assist',
+                    icon: 'ban',
+                    iconVariant: 'error',
+                    highlighted: false
+                };
+                break;
 
-			case 'default':
-				attributes = {
-					label: 'Agent Assist',
-					icon: 'workforce_engagement',
-					iconVariant: '',
-					highlighted: false
-				};
-				break;
+            case 'default':
+                attributes = {
+                    label: 'Agent Assist',
+                    icon: 'workforce_engagement',
+                    iconVariant: '',
+                    highlighted: false
+                };
+                break;
 		}
 
-		if (this.utilityId) {
-			updateUtility(this.utilityId, attributes);
-		}
-	}
+        if (this.utilityId) {
+            updateUtility(this.utilityId, attributes);
+        }
+    }
 	handleSetInteractionContextNotification(message) {
 		try {
 			let intContNotError = '';
@@ -1459,7 +1440,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				e
 			);
 		}
-	}
+    }
 
 	handleSetCustomerContextNotification(message) {
 		try {
@@ -1468,7 +1449,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				localStorage.setItem('cust_context_error', message?.error?.error_status || '');
 				localStorage.setItem('cust_context_error_message', message?.error?.user_message || '');
 				this.isCustContextError = true;
-				custContNotError = message?.error?.user_message;
+                custContNotError = message?.error?.user_message;
 				this.custContErrorMessage = custContNotError;
 				LWCLogger({
 					messageText:
@@ -1493,14 +1474,14 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					source: ' aa_agentAssistParent_LWC | handleSetCustomerContextNotification ',
 					level: 'info'
 				});
-			}
+            }
 		} catch (e) {
 			console.error(
 				'aa_agentAssistParent_LWC | handleSetCustomerContextNotification | Error in handleSetCustomerContextNotification',
 				e
 			);
 		}
-	}
+    }
 
 	handleContextError() {
 		try {
@@ -1528,8 +1509,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	sanitize(str) {
-		// Only allow alphabets and spaces
-		return str.replace(/[^a-z\s]/gi, '');
+        // Only allow alphabets and spaces
+        return str.replace(/[^a-z\s]/gi, '');
 	}
 
 	async handleOpenAAUtility() {
@@ -1539,23 +1520,20 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 		await open(this.utilityId, { autoFocus: true });
 
-		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_logging_context(
+		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
 				'INFO',
 				'aa_agentAssistParentLWC.js',
 				'handleOpenAAUtility',
 				'AA Auto Open',
 				this.genesysInteractionId,
 				AgentAssistSplunkLoggingUtils.splunk_agentAssistAutoOpen_message(
-					this.userSalesforceId,
-					this.voiceCallId,
-					this.genesysInteractionId
+					this.userSalesforceId, this.voiceCallId , this.genesysInteractionId
 				)
-			)
-		);
-		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			));
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
 
 		this.startUtilityMonitor();
+		
 	}
 
 	@wire(isFeatureEnabled, { featureName: 'AA_Live_Transcription' })
@@ -1567,11 +1545,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
-	get showTranscriptButton() {
+	get showTranscriptButton(){
 		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
 	//new
-	popedOutSplunkLog() {
+	popedOutSplunkLog(){
 		console.log('AA poped out');
 		try {
 			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
@@ -1582,7 +1560,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					interactionId,
 					userId,
 					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(
+						voiceCallId
+					),
 					'AA_PopedOut'
 				)
 			);
@@ -1590,34 +1570,38 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			LWCSplunkLogger({
 				jsonString: splunkJsonString,
 				eventName: 'AgentAssistUsageEvent'
-			});
+			}); 
+			
+
 		} catch (error) {
 			console.error('Error logging AA_PopedOutMode', error);
 		}
 	}
-
+	
 	async handleGetUtilityInfo() {
 		console.log('AA poped out Inside handleGetUtilityInfo');
-		try {
-			if (!this.utilityId) {
-				return;
-			}
-			const utilityInfo = await getInfo(this.utilityId);
+        try {
+            if (!this.utilityId) {
+                return;
+            }
+            const utilityInfo = await getInfo(this.utilityId);
 			console.log(' AA poped out utilityInfo : ', utilityInfo.utilityPoppedOut);
-			if (utilityInfo.utilityPoppedOut) {
+            if(utilityInfo.utilityPoppedOut){
 				this.popedOutSplunkLog();
 			}
-		} catch (error) {
-			// handle error
+        }
+        catch (error) {
+            // handle error
 		}
 	}
 
+	
 	startUtilityMonitor() {
 		//Prevent multiple intervals
 		if (this.utilityPollingInterval || !this.utilityId) {
 			return;
 		}
-
+		
 		//  only start if interaction exists
 		const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
 
@@ -1631,37 +1615,44 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.utilityPollingInterval = setInterval(() => {
 			this.checkUtilityVisibility();
 			console.log('Polling started startUtilityMonitor');
-		}, 3000);
+		}, 3000); 
 	}
 
 	async checkUtilityVisibility() {
-		try {
-			const utilityInfo = await getInfo(this.utilityId);
-			const currentState = utilityInfo?.utilityVisible;
+    try {
+        const utilityInfo = await getInfo(this.utilityId);
+        const currentState = utilityInfo?.utilityVisible;
 
-			//  ONLY detect visible → hidden
-			if (
-				!this.isTabHidden &&
-				this.utilityVisibleState !== null &&
-				this.utilityVisibleState === true &&
-				currentState === false
-			) {
-				this.logAAMinimized('AA_Minimised');
-			}
+        //  ONLY detect visible → hidden
+        if ( !this.isTabHidden && 
+            this.utilityVisibleState !== null &&
+            this.utilityVisibleState === true &&
+            currentState === false
+        ) {
+            this.logAAMinimized('AA_Minimised');
+        }
 
-			this.utilityVisibleState = currentState;
-		} catch (error) {
-			console.error('Error checking utility visibility', error);
-		}
-	}
+        this.utilityVisibleState = currentState;
 
-	disconnectedCallback() {
+    } catch (error) {
+        console.error('Error checking utility visibility', error);
+    }
+}
+
+	disconnectedCallback() {		
 		this.stopUtilityMonitor();
-		document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+		document.removeEventListener(
+			'visibilitychange',
+			this.handleVisibilityChange
+		);
 
-		window.removeEventListener('beforeunload', this.handleWindowClose);
+		window.removeEventListener(
+			'beforeunload',
+			this.handleWindowClose
+		);
+
 	}
-
+	
 	stopUtilityMonitor() {
 		if (this.utilityPollingInterval) {
 			clearInterval(this.utilityPollingInterval);
@@ -1670,8 +1661,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
-	logAAMinimized(reason) {
-		try {
+	logAAMinimized(reason ) {
+		try {	
 			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
 			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
 
@@ -1681,17 +1672,20 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					interactionId,
 					userId,
 					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(
+						voiceCallId
+					),
 					reason
 				)
 			);
-
+			
 			LWCSplunkLogger({
 				jsonString: splunkJsonString,
 				eventName: 'AgentAssistUsageEvent'
-			});
+			}); 
 
-			console.log('AA_Minimised logged:', reason, ' data : ', splunkJsonString);
+			console.log('AA_Minimised logged:', reason, ' data : ',splunkJsonString);
+
 		} catch (e) {
 			console.error(e);
 		}
@@ -1701,13 +1695,16 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		if (document.hidden && this.isPopoutMode) {
 			this.isTabHidden = true;
 			this.logAAMinimized('AA_Minimisedtab switch');
-		} else {
-			this.isTabHidden = false;
 		}
+		else {
+				this.isTabHidden = false;
+			}
+
 	}
 	handleWindowClose() {
-		if (this.isPopoutMode) {
+		if(this.isPopoutMode){
 			this.logAAMinimized('AA_WINDOW_CLOSE');
 		}
+		
 	}
 }

@@ -147,21 +147,21 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 									const statusString = card.isSumError ? 'failed' : 'success';
 									let splunkJsonString = JSON.stringify(
-										AgentAssistSplunkLoggingUtils.splunk_logging_context(
-											'INFO',
+										AgentAssistSplunkLoggingUtils.splunk_outer_context(
 											'aa_knowledgeMessage.js',
-											'PCS_viewed',
-											'PCS Interaction Event',
 											localStorage.getItem('agentAssistGenesysInteractionId'),
-											AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
-												cardId,
+											userId,
+											'INFO',
+											AgentAssistSplunkLoggingUtils.splunk_inner_context(
 												localStorage.getItem('agentAssistVoiceCallId'),
-												localStorage.getItem('agentAssistGenesysInteractionId'),
-												userId,
+												undefined,
+												undefined,
+												cardId,
+												undefined,
 												'PCS_viewed',
 												statusString
 											),
-											userId
+											'PCS_viewed'
 										)
 									);
 									LWCSplunkLogger({
@@ -623,21 +623,21 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 			const statusString = card.isSumError ? 'failed' : 'success';
 			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_logging_context(
-					'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
 					'aa_knowledgeMessage.js',
-					'preparePostCallSummary',
-					'PCS Interaction Event',
 					localStorage.getItem('agentAssistGenesysInteractionId'),
-					AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
-						card.card_id,
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(
 						localStorage.getItem('agentAssistVoiceCallId'),
-						localStorage.getItem('agentAssistGenesysInteractionId'),
-						userId,
+						undefined,
+						undefined,
+						card.card_id,
+						undefined,
 						'PCS_generated',
 						statusString
 					),
-					userId
+					'PCS_generated'
 				)
 			);
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
@@ -728,19 +728,22 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 		const pcsOccurred = this.cards.some((c) => c.isSummary && !c.isSumError);
 		let callLevelSplunkString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_logging_context(
-				'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
 				'aa_knowledgeMessage.js',
-				'Call Level Summary Check',
-				'PCS Call Level Event',
 				localStorage.getItem('agentAssistGenesysInteractionId'),
-				AgentAssistSplunkLoggingUtils.splunk_pcs_call_level_message(
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(
 					localStorage.getItem('agentAssistVoiceCallId'),
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
+					undefined,
 					pcsOccurred
 				),
-				userId
+				'Call Level Summary Check'
 			)
 		);
 		LWCSplunkLogger({ jsonString: callLevelSplunkString, eventName: 'AgentAssistUsageEvent' });
@@ -1211,21 +1214,21 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		if (card.isSummary) {
 			const statusString = card.isSumError ? 'failed' : 'success';
 			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_logging_context(
-					'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
 					'aa_knowledgeMessage.js',
-					'handleCopy PCS',
-					'PCS Interaction Event',
 					localStorage.getItem('agentAssistGenesysInteractionId'),
-					AgentAssistSplunkLoggingUtils.splunk_pcs_interaction_message(
-						cardId,
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(
 						localStorage.getItem('agentAssistVoiceCallId'),
-						localStorage.getItem('agentAssistGenesysInteractionId'),
-						userId,
+						undefined,
+						undefined,
+						cardId,
+						undefined,
 						'PCS_copied',
 						statusString
 					),
-					userId
+					'PCS_copied'
 				)
 			);
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
@@ -1239,18 +1242,18 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		}
 
 		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_logging_context(
-				'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
 				'aa_knowledgeMessage.js',
-				cardType,
-				'AA Copy',
 				localStorage.getItem('agentAssistGenesysInteractionId'),
-				AgentAssistSplunkLoggingUtils.splunk_agentAssistCopied(
-					cardId,
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(
 					localStorage.getItem('agentAssistVoiceCallId'),
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId
-				)
+					undefined,
+					undefined,
+					cardId
+				),
+				cardType
 			)
 		);
 
@@ -1283,7 +1286,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				interactionId,
 				userId,
 				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, card.card_id),
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, card.card_id),
 				cardType
 			)
 		);
@@ -1315,7 +1318,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					interactionId,
 					userId,
 					logtype,
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, cardId),
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, cardId),
 					'KnowledgeCard_' + statusLabel
 				)
 			);
@@ -1353,7 +1356,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					interactionId,
 					userId,
 					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, card.card_id),
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, card.card_id),
 					eventLabel
 				)
 			);

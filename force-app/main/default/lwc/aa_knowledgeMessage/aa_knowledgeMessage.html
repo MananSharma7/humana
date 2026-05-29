@@ -344,13 +344,15 @@
 								</div>
 
 								<div lwc:if={card.isFooter} class="feedback">
-									<lightning-icon
-										icon-name="utility:reply"
-										size="xx-small"
-										alternative-text="reply"
-										data-id={card.card_id}
-										onclick={handleReply}
-									></lightning-icon>
+									<template if:false={card.isSummary}>
+										<lightning-icon
+											icon-name="utility:reply"
+											size="xx-small"
+											alternative-text="reply"
+											data-id={card.card_id}
+											onclick={handleReply}
+										></lightning-icon>
+									</template>
 									<lightning-icon
 										size="xx-small"
 										icon-name="utility:like"
