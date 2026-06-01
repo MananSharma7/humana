@@ -17,7 +17,7 @@ import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getR
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
 import PROXY_CHANNEL from '@salesforce/messageChannel/AgentAssistLWCMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
-import { EnclosingUtilityId, updateUtility, open, getInfo } from 'lightning/platformUtilityBarApi';
+import { EnclosingUtilityId, updateUtility, open } from 'lightning/platformUtilityBarApi';
 import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_SSO';
 import { AgentAssist_Labels, AuthErrorClass } from './layoutConfig';
 import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSOAccessToken';
@@ -26,7 +26,6 @@ import revokeAccess from '@salesforce/apex/AA_AzureOAuthGraphCallout.revokeAcces
 import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
-import userId from '@salesforce/user/Id';
 
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
@@ -71,11 +70,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	genesysData;
 	_recordId;
-	
-	utilityVisibleState = null;      // Tracks previous state
-	utilityPollingInterval = null;   // Holds interval reference
-	isTabHidden = false; 
-	
 	//sso variables
     objSSOCallout = null;
     @track ssoMessage = '';
@@ -178,21 +172,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
 		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
-		if(this.isPopoutMode){
-			this.popedOutSplunkLog();
-		}
-
-		//  Restart polling if interaction still active (fix for popout/reload)
-		if (localStorage.getItem('agentAssistGenesysInteractionId')) {
-			this.startUtilityMonitor();
-		}
-		
-
-		this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
-		document.addEventListener('visibilitychange', this.handleVisibilityChange);
-		this.handleWindowClose = this.handleWindowClose.bind(this);
-		window.addEventListener('beforeunload', this.handleWindowClose);
-		
 		this.updateStatus('default');
 		if (!this.recordId) {
 			const storedId = localStorage.getItem('agentAssistVoiceCallId');
@@ -400,8 +379,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						USER_RECORD_ID
 					));
 					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
-					this.handleGetUtilityInfo();
-					console.log('AA poped out handleGetUtilityInfo');
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
 					break;
@@ -541,7 +518,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				this.recordId = null;
 				this.relatedRecordId = null;
 
-				this.stopUtilityMonitor();
 				// Clear Session Storage
 				localStorage.removeItem('agentAssistVoiceCallId');
 				localStorage.removeItem('agentAssistGenesysInteractionId');
@@ -1231,7 +1207,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.websocket.emitEvent('pcs_feedback_event', data);
 			return;
 		}
-		
+
 		let datum = data?.data;
 		let feedback_value = data?.data?.feedback?.rating;
 		let feedback_text = data?.data?.feedback?.feedback_text;
@@ -1291,6 +1267,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			source: 'sendAMAQuery | Ask Me Anything',
 			level: 'info'
 		});
+
 		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
 			'aa_agentAssistParent_LWC.js',
 			localStorage.getItem('agentAssistGenesysInteractionId'),
@@ -1531,8 +1508,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				)
 			));
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
-
-		this.startUtilityMonitor();
 		
 	}
 
@@ -1548,163 +1523,5 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	get showTranscriptButton(){
 		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
-	//new
-	popedOutSplunkLog(){
-		console.log('AA poped out');
-		try {
-			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_agentAssistParentLWC.js',
-					interactionId,
-					userId,
-					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(
-						voiceCallId
-					),
-					'AA_PopedOut'
-				)
-			);
-
-			LWCSplunkLogger({
-				jsonString: splunkJsonString,
-				eventName: 'AgentAssistUsageEvent'
-			}); 
-			
-
-		} catch (error) {
-			console.error('Error logging AA_PopedOutMode', error);
-		}
-	}
 	
-	async handleGetUtilityInfo() {
-		console.log('AA poped out Inside handleGetUtilityInfo');
-        try {
-            if (!this.utilityId) {
-                return;
-            }
-            const utilityInfo = await getInfo(this.utilityId);
-			console.log(' AA poped out utilityInfo : ', utilityInfo.utilityPoppedOut);
-            if(utilityInfo.utilityPoppedOut){
-				this.popedOutSplunkLog();
-			}
-        }
-        catch (error) {
-            // handle error
-		}
-	}
-
-	
-	startUtilityMonitor() {
-		//Prevent multiple intervals
-		if (this.utilityPollingInterval || !this.utilityId) {
-			return;
-		}
-		
-		//  only start if interaction exists
-		const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-
-		if (!interactionId) {
-			console.log(' No active interaction → skipping polling');
-			return;
-		}
-
-		console.log('Starting utility polling');
-
-		this.utilityPollingInterval = setInterval(() => {
-			this.checkUtilityVisibility();
-			console.log('Polling started startUtilityMonitor');
-		}, 3000); 
-	}
-
-	async checkUtilityVisibility() {
-    try {
-        const utilityInfo = await getInfo(this.utilityId);
-        const currentState = utilityInfo?.utilityVisible;
-
-        //  ONLY detect visible → hidden
-        if ( !this.isTabHidden && 
-            this.utilityVisibleState !== null &&
-            this.utilityVisibleState === true &&
-            currentState === false
-        ) {
-            this.logAAMinimized('AA_Minimised');
-        }
-
-        this.utilityVisibleState = currentState;
-
-    } catch (error) {
-        console.error('Error checking utility visibility', error);
-    }
-}
-
-	disconnectedCallback() {		
-		this.stopUtilityMonitor();
-		document.removeEventListener(
-			'visibilitychange',
-			this.handleVisibilityChange
-		);
-
-		window.removeEventListener(
-			'beforeunload',
-			this.handleWindowClose
-		);
-
-	}
-	
-	stopUtilityMonitor() {
-		if (this.utilityPollingInterval) {
-			clearInterval(this.utilityPollingInterval);
-			this.utilityPollingInterval = null;
-			console.log('Utility pooling closed');
-		}
-	}
-
-	logAAMinimized(reason ) {
-		try {	
-			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
-			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
-
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_agentAssistParentLWC.js',
-					interactionId,
-					userId,
-					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(
-						voiceCallId
-					),
-					reason
-				)
-			);
-			
-			LWCSplunkLogger({
-				jsonString: splunkJsonString,
-				eventName: 'AgentAssistUsageEvent'
-			}); 
-
-			console.log('AA_Minimised logged:', reason, ' data : ',splunkJsonString);
-
-		} catch (e) {
-			console.error(e);
-		}
-	}
-
-	handleVisibilityChange() {
-		if (document.hidden && this.isPopoutMode) {
-			this.isTabHidden = true;
-			this.logAAMinimized('AA_Minimisedtab switch');
-		}
-		else {
-				this.isTabHidden = false;
-			}
-
-	}
-	handleWindowClose() {
-		if(this.isPopoutMode){
-			this.logAAMinimized('AA_WINDOW_CLOSE');
-		}
-		
-	}
 }

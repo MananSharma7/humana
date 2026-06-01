@@ -170,6 +170,7 @@
 	flex-wrap: nowrap;
 	gap: 6px;
 	width: 100%;
+	padding-top: 10px;
 }
 
 .feedback lightning-icon {
