@@ -560,7 +560,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | feedback_text: ' + feedback_text);
 		console.log('agentAssistUtilityPanel | sendKnowledgeCardFeedback | card_id: ' + card_id);
 
-		if (feedback_value && feedback_text && card_id && this.genesysInteractionId) {
+		if (feedback_value !== undefined && feedback_value !== null && feedback_text && card_id && this.genesysInteractionId) {
 			this.websocket.emitEvent(
 				AgentAssistLabels.AGENT_FEEDBACK,
 				AgentAssistEvents.agent_feedback(feedback_value, feedback_text, card_id, this.genesysInteractionId)

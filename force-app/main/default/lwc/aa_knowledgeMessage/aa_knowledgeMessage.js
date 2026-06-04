@@ -392,6 +392,15 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			if (existingIndex !== -1) {
 				const prevCard = this.cards[existingIndex];
 				card.isPinned = prevCard.isPinned;
+				card.isLiked = prevCard.isLiked;
+				card.isDisLiked = prevCard.isDisLiked;
+				card.likeClass = prevCard.likeClass;
+				card.dislikeClass = prevCard.dislikeClass;
+				card.isLikeDisabled = prevCard.isLikeDisabled;
+				card.isDislikeDisabled = prevCard.isDislikeDisabled;
+				card.showDislikeReasons = prevCard.showDislikeReasons;
+				card.disLikeReasons = prevCard.disLikeReasons;
+				card.feedbackError = prevCard.feedbackError;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
 				card.isPinned = false;
@@ -425,6 +434,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
 				const isMinimized = !card.isMinimized;
+				this.logCardExpandCollapse(card, !isMinimized);
 				return {
 					...card,
 					isMinimized: isMinimized,
@@ -499,6 +509,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareKnowledgeCard | Knowledge Cards',
 						level: 'info'
 					});
+					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'completed');
 					break;
 				case 'abandoned':
 					isAbandoned = true;
@@ -515,6 +526,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareKnowledgeCard | Knowledge Cards',
 						level: 'info'
 					});
+					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'abandoned');
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -554,6 +566,15 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			if (existingIndex !== -1) {
 				const prevCard = this.cards[existingIndex];
 				card.isPinned = prevCard.isPinned;
+				card.isLiked = prevCard.isLiked;
+				card.isDisLiked = prevCard.isDisLiked;
+				card.likeClass = prevCard.likeClass;
+				card.dislikeClass = prevCard.dislikeClass;
+				card.isLikeDisabled = prevCard.isLikeDisabled;
+				card.isDislikeDisabled = prevCard.isDislikeDisabled;
+				card.showDislikeReasons = prevCard.showDislikeReasons;
+				card.disLikeReasons = prevCard.disLikeReasons;
+				card.feedbackError = prevCard.feedbackError;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
 				card.isPinned = false;
@@ -622,10 +643,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			}
 
 			const existingIndex = this.cards.findIndex((c) => c.card_id === card.card_id);
+			const isNewSummary = existingIndex === -1;
 
 			if (existingIndex !== -1) {
 				const prevCard = this.cards[existingIndex];
 				card.isPinned = prevCard.isPinned;
+				card.isLiked = prevCard.isLiked;
+				card.isDisLiked = prevCard.isDisLiked;
+				card.likeClass = prevCard.likeClass;
+				card.dislikeClass = prevCard.dislikeClass;
+				card.isLikeDisabled = prevCard.isLikeDisabled;
+				card.isDislikeDisabled = prevCard.isDislikeDisabled;
+				card.showDislikeReasons = prevCard.showDislikeReasons;
+				card.disLikeReasons = prevCard.disLikeReasons;
+				card.feedbackError = prevCard.feedbackError;
 				this.cards = [...this.cards.slice(0, existingIndex), card, ...this.cards.slice(existingIndex + 1)];
 			} else {
 				card.isPinned = false;
@@ -635,40 +666,43 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			this.errorMessage = null;
 			this.SummaryErrorMessage = null;
 			this.updateJumpToPresent();
-			LWCLogger({
-				messageText:
-					'Post Call Summary Completed; Interaction ID: ' +
-					localStorage.getItem('agentAssistGenesysInteractionId') +
-					'; Agent Assist Session ID: ' +
-					localStorage.getItem('agentAssistVoiceCallId') +
-					'; Card ID: ' +
-					card?.card_id +
-					'; Summary Title: ' +
-					summaryTitle,
-				source: 'prepareKnowledgeCard | Post Call Summary',
-				level: 'info'
-			});
 
-			const statusString = card.isSumError ? 'failed' : 'success';
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_knowledgeMessage.js',
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId,
-					'INFO',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(
-						localStorage.getItem('agentAssistVoiceCallId'),
-						undefined,
-						undefined,
-						card.card_id,
-						undefined,
-						'PCS_generated',
-						statusString
-					),
-					'PCS_generated'
-				)
-			);
-			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			if (isNewSummary) {
+				LWCLogger({
+					messageText:
+						'Post Call Summary Completed; Interaction ID: ' +
+						localStorage.getItem('agentAssistGenesysInteractionId') +
+						'; Agent Assist Session ID: ' +
+						localStorage.getItem('agentAssistVoiceCallId') +
+						'; Card ID: ' +
+						card?.card_id +
+						'; Summary Title: ' +
+						summaryTitle,
+					source: 'prepareKnowledgeCard | Post Call Summary',
+					level: 'info'
+				});
+
+				const statusString = card.isSumError ? 'failed' : 'success';
+				let splunkJsonString = JSON.stringify(
+					AgentAssistSplunkLoggingUtils.splunk_outer_context(
+						'aa_knowledgeMessage.js',
+						localStorage.getItem('agentAssistGenesysInteractionId'),
+						userId,
+						'INFO',
+						AgentAssistSplunkLoggingUtils.splunk_inner_context(
+							localStorage.getItem('agentAssistVoiceCallId'),
+							undefined,
+							undefined,
+							card.card_id,
+							undefined,
+							'PCS_generated',
+							statusString
+						),
+						'PCS_generated'
+					)
+				);
+				LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			}
 		} catch (error) {
 			this.showError('We are unable to retrieve Summary at this time');
 		}
@@ -923,33 +957,36 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 	handleLike(event) {
 		const cardId = event.currentTarget.dataset.id;
+		const targetCard = this.cards.find((c) => c.card_id === cardId);
+		if (!targetCard) return;
+
+		const isUndoing = targetCard.isLiked === true;
 
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
-				if (card.isSummary) {
+				if (isUndoing) {
 					return {
 						...card,
-						isLiked: true,
+						isLiked: false,
 						isDisLiked: false,
-
-						likeClass: 'like-green',
+						likeClass: '',
 						dislikeClass: '',
-
-						isLikeDisabled: 'opacity:1;',
-						isDislikeDisabled: 'opacity:0.4;',
-						showDislikeReasons: false
+						isLikeDisabled: '',
+						isDislikeDisabled: '',
+						showDislikeReasons: false,
+						feedbackError: null
 					};
 				}
 				return {
 					...card,
 					isLiked: true,
 					isDisLiked: false,
-
 					likeClass: 'like-green',
-					dislikeClass: 'icon-disabled',
-
-					isLikeDisabled: 'pointer-events:none; opacity:1;',
-					isDislikeDisabled: 'pointer-events:none; opacity:0.4;'
+					dislikeClass: '',
+					isLikeDisabled: 'opacity:1;',
+					isDislikeDisabled: 'opacity:0.4;',
+					showDislikeReasons: false,
+					feedbackError: null
 				};
 			}
 			return card;
@@ -959,7 +996,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		let data;
 		let label = 'Thank you for your feedback!';
 
-		if (this.cards.find((c) => c.card_id === cardId)?.isSummary) {
+		if (targetCard.isSummary) {
 			data = {
 				version: '1.0',
 				event_type: 'pcs_feedback_event',
@@ -969,15 +1006,17 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						user_network_id: ''
 					},
 					feedback: {
-						feedback_text: 'No feedback_text',
-						rating: 'true'
+						feedback_text: isUndoing ? 'Neutral' : 'No feedback_text',
+						rating: isUndoing ? null : 'true'
 					}
 				}
 			};
-			label = 'Thank you for your feedback!';
+			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		} else {
-			data = AgentAssistEvents.agent_feedback(true, 'Liked', cardId, this.interactionId);
-			label = 'Thanks for providing a reason!'; // Keeping existing (though likely a bug, as per plan we maintain existing)
+			const feedbackValue = isUndoing ? null : true;
+			const feedbackText = isUndoing ? 'Neutral' : 'Liked';
+			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId);
+			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		}
 
 		try {
@@ -1007,28 +1046,53 @@ export default class Aa_knowledgeMessage extends LightningElement {
 	}
 	handleDislike(event) {
 		const cardId = event.currentTarget.dataset.id;
+		const targetCard = this.cards.find((c) => c.card_id === cardId);
+		if (!targetCard) return;
+
+		const isUndoing = targetCard.isDisLiked === true;
 
 		this.cards = this.cards.map((card) => {
 			if (card.card_id === cardId) {
+				if (isUndoing) {
+					const reasons = card.disLikeReasons ? card.disLikeReasons.map((r) => ({
+						...r,
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					})) : [];
+					return {
+						...card,
+						isLiked: false,
+						isDisLiked: false,
+						likeClass: '',
+						dislikeClass: '',
+						isLikeDisabled: '',
+						isDislikeDisabled: '',
+						showDislikeReasons: false,
+						disLikeReasons: reasons,
+						feedbackError: null
+					};
+				}
+
 				let reasons = [
-						{
-							text: 'Not relevant',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						},
-						{
-							text: 'Info not accurate',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						},
-						{
-							text: 'Confusing Content',
-							isSelected: false,
-							buttonClass: 'slds-button_neutral',
-							disabled: false
-						}
+					{
+						text: 'Not relevant',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					},
+					{
+						text: 'Info not accurate',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					},
+					{
+						text: 'Confusing Content',
+						isSelected: false,
+						buttonClass: 'slds-button_neutral',
+						disabled: false
+					}
 				];
 
 				if (card.isSummary) {
@@ -1054,45 +1118,26 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					];
 				}
 
-				if (card.isSummary) {
-					return {
-						...card,
-						isLiked: false,
-						isDisLiked: true,
-
-						likeClass: '',
-						dislikeClass: 'dislike-red',
-
-						isLikeDisabled: 'opacity:0.4;',
-						isDislikeDisabled: 'opacity:1;',
-
-						disLikeReasons: reasons,
-						showDislikeReasons: true
-					};
-				}
-
 				return {
 					...card,
 					isLiked: false,
 					isDisLiked: true,
-
-					likeClass: 'icon-disabled',
+					likeClass: '',
 					dislikeClass: 'dislike-red',
-
-					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
-					isDislikeDisabled: 'pointer-events:none; opacity:1;',
-
+					isLikeDisabled: 'opacity:0.4;',
+					isDislikeDisabled: 'opacity:1;',
 					disLikeReasons: reasons,
-					showDislikeReasons: true
+					showDislikeReasons: true,
+					feedbackError: null
 				};
 			}
 			return card;
 		});
 		this.saveState();
-
-		const card = this.cards.find((c) => c.card_id === cardId);
 		let data;
-		if (card?.isSummary) {
+		let label = 'Thank you for your feedback!';
+
+		if (targetCard.isSummary) {
 			data = {
 				version: '1.0',
 				event_type: 'pcs_feedback_event',
@@ -1102,13 +1147,17 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						user_network_id: ''
 					},
 					feedback: {
-						feedback_text: 'No feedback_text',
-						rating: 'false'
+						feedback_text: isUndoing ? 'Neutral' : 'No feedback_text',
+						rating: isUndoing ? null : 'false'
 					}
 				}
 			};
+			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		} else {
-			data = AgentAssistEvents.agent_feedback(false, 'Disliked', cardId, this.interactionId);
+			const feedbackValue = isUndoing ? null : false;
+			const feedbackText = isUndoing ? 'Neutral' : 'Disliked';
+			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId);
+			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		}
 
 		try {
@@ -1119,7 +1168,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			);
 
 			Toast.show({
-				label: 'Thank you for your feedback!',
+				label: label,
 				mode: 'dismissible',
 				variant: 'success'
 			});
@@ -1149,24 +1198,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					disabled: reason.text !== selectedReason
 				}));
 
-				if (card.isSummary) {
-					return {
-						...card,
-						disLikeReasons: updatedReasons,
-						showDislikeReasons: false,
-						dislikeClass: 'dislike-red',
-						isLikeDisabled: 'opacity:0.4;',
-						isDislikeDisabled: 'opacity:1;'
-					};
-				}
-
 				return {
 					...card,
 					disLikeReasons: updatedReasons,
 					showDislikeReasons: false,
 					dislikeClass: 'dislike-red',
-					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
-					isDislikeDisabled: 'pointer-events:none; opacity:1;'
+					isLikeDisabled: 'opacity:0.4;',
+					isDislikeDisabled: 'opacity:1;'
 				};
 			}
 			return card;
@@ -1262,16 +1300,16 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			return;
 		}
 
-		let cardType = 'handleCopy KnowledgeCard';
+		let cardType = 'KnowledgeCard_copied';
 
 		if (card.card_AMA) {
-			cardType = 'handleCopy AMA';
+			cardType = 'AMA_copied';
 		}
 
 		let splunkJsonString = JSON.stringify(
 			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_knowledgeMessage.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
+				'aa_knowledgeMessage.js',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
 				userId,
 				'INFO',
 				AgentAssistSplunkLoggingUtils.splunk_inner_context(
@@ -1282,8 +1320,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				),
 				cardType
 			)
-		);
-						
+		);		
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 
@@ -1300,23 +1337,99 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const card = this.cards.find(c => c.card_id == cardId);
 		if (!card) return;
 
-		let cardType = 'handleLinkClick KnowledgeCard';
+		const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+		const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
 
+		let cardType = 'KnowledgeCard_LinkClicked';
+		
 		if (card.card_AMA) {
-			cardType = 'handleLinkClick AMA';
+			cardType = 'AMA_LinkClicked';
 		} 
 
-		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
-                                'INFO',
-                                'aa_knowledgeMessage.js',
-                                cardType,
-                                'AA LinkClicked',
-                                localStorage.getItem('agentAssistGenesysInteractionId'),
-                                AgentAssistSplunkLoggingUtils.splunk_agentAssist_linkClicked(
-                                   cardId , localStorage.getItem('agentAssistVoiceCallId') , localStorage.getItem('agentAssistGenesysInteractionId'), userId )
-                                ));
-                        	
-			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
+		let splunkJsonString = JSON.stringify(
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
+				'aa_knowledgeMessage.js',
+				interactionId,
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, card.card_id),
+				cardType
+			)
+		);
+
+		LWCSplunkLogger({
+			jsonString: splunkJsonString,
+			eventName: 'AgentAssistUsageEvent'
+		});
+	}
+	
+	logKnowledgeCardToSplunk(cardId, status) {
+		try {
+			if (!cardId) return;
+
+			if (this.loggedCards.has(cardId)) {
+				return;
+			}
+
+			this.loggedCards.add(cardId);
+
+			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
+			const statusLabel = status === 'completed' ? 'Completed' : 'Abandoned';
+			const logtype = status === 'completed' ? 'INFO' : 'WARN';
+
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
+					'aa_knowledgeMessage.js',
+					interactionId,
+					userId,
+					logtype,
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, cardId),
+					'KnowledgeCard_' + statusLabel
+				)
+			);
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		} catch (error) {
+			console.error('Error logging Knowledge Card', error);
+		}
+	}
+
+	logCardExpandCollapse(card, isExpanded) {
+		try {
+			if (!card || !card.card_id) {
+				return;
+			}
+
+			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
+			const action = isExpanded ? 'Expanded' : 'Collapsed';
+			const eventLabel = `${cardType}_${action}`;
+			let cardType = 'KnowledgeCard';
+
+			if (card.card_AMA) {
+				cardType = 'AMA';
+			} else if (card.isSummary) {
+				cardType = 'PCS';
+			}
+					
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
+					'aa_knowledgeMessage.js',
+					interactionId,
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId, undefined, undefined, card.card_id),
+					eventLabel
+				)
+			);
+
+			LWCSplunkLogger({
+				jsonString: splunkJsonString,
+				eventName: 'AgentAssistUsageEvent'
+			});
+		} catch (error) {
+			console.error('Error logging expand/collapse', error);
+		}
 	}
 
 }
