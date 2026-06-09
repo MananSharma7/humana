@@ -274,22 +274,25 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_knowledgeMessage.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId'),
-								undefined,
-								undefined,
-								cardMetadata?.card_id
-							),
-							'AskMeAnythingCardCompleted'
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					if (!this.loggedCards.has(cardMetadata?.card_id)) {
+						let splunkJsonString = JSON.stringify(
+							AgentAssistSplunkLoggingUtils.splunk_outer_context(
+								'aa_knowledgeMessage.js',
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								userId,
+								'INFO',
+								AgentAssistSplunkLoggingUtils.splunk_inner_context(
+									localStorage.getItem('agentAssistVoiceCallId'),
+									undefined,
+									undefined,
+									cardMetadata?.card_id
+								),
+								'AskMeAnythingCardCompleted'
+							)
+						);
+						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+						this.loggedCards.add(cardMetadata?.card_id);
+					}
 					break;
 				case 'abandoned':
 					isAbandoned = true;
@@ -306,22 +309,25 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						source: 'prepareAskMeAnything | AMA',
 						level: 'info'
 					});
-					let splunkJsonStringAbandoned = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_knowledgeMessage.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'WARN',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId'),
-								undefined,
-								undefined,
-								cardMetadata?.card_id
-							),
-							'AskMeAnythingCardAbandoned'
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonStringAbandoned, eventName: 'AgentAssistUsageEvent' });
+					if (!this.loggedCards.has(cardMetadata?.card_id)) {
+						let splunkJsonString = JSON.stringify(
+							AgentAssistSplunkLoggingUtils.splunk_outer_context(
+								'aa_knowledgeMessage.js',
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								userId,
+								'WARN',
+								AgentAssistSplunkLoggingUtils.splunk_inner_context(
+									localStorage.getItem('agentAssistVoiceCallId'),
+									undefined,
+									undefined,
+									cardMetadata?.card_id
+								),
+								'AskMeAnythingCardAbandoned'
+							)
+						);
+						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+						this.loggedCards.add(cardMetadata?.card_id);
+					}
 					break;
 				default:
 					console.error('Unknown card status => ', cardStatus);
@@ -702,7 +708,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					)
 				);
 				LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-			}
+		}
 		} catch (error) {
 			this.showError('We are unable to retrieve Summary at this time');
 		}
@@ -787,28 +793,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('clearCards: No message data provided to verify ID.');
 		}
 		console.log('clearCards: CLEARING DATA NOW.');
-
-		const pcsOccurred = this.cards.some((c) => c.isSummary && !c.isSumError);
-		let callLevelSplunkString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_knowledgeMessage.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				userId,
-				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(
-					localStorage.getItem('agentAssistVoiceCallId'),
-					undefined,
-					undefined,
-					undefined,
-					undefined,
-					undefined,
-					undefined,
-					pcsOccurred
-				),
-				'Call Level Summary Check'
-			)
-		);
-		LWCSplunkLogger({ jsonString: callLevelSplunkString, eventName: 'AgentAssistUsageEvent' });
 
 		this.cards = [];
 		this.interactionId = null;
@@ -1399,19 +1383,19 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			if (!card || !card.card_id) {
 				return;
 			}
-
 			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
 			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
 			const action = isExpanded ? 'Expanded' : 'Collapsed';
-			const eventLabel = `${cardType}_${action}`;
 			let cardType = 'KnowledgeCard';
-
+			
 			if (card.card_AMA) {
 				cardType = 'AMA';
 			} else if (card.isSummary) {
 				cardType = 'PCS';
-			}
-					
+			}	
+			
+			const eventLabel = `${cardType}_${action}`;
+			
 			let splunkJsonString = JSON.stringify(
 				AgentAssistSplunkLoggingUtils.splunk_outer_context(
 					'aa_knowledgeMessage.js',
@@ -1422,11 +1406,12 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					eventLabel
 				)
 			);
-
+			
 			LWCSplunkLogger({
 				jsonString: splunkJsonString,
 				eventName: 'AgentAssistUsageEvent'
 			});
+			
 		} catch (error) {
 			console.error('Error logging expand/collapse', error);
 		}
