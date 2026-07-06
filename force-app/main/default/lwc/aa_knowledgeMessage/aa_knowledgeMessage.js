@@ -275,22 +275,22 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						level: 'info'
 					});
 					if (!this.loggedCards.has(cardMetadata?.card_id)) {
-						let splunkJsonString = JSON.stringify(
-							AgentAssistSplunkLoggingUtils.splunk_outer_context(
-								'aa_knowledgeMessage.js',
-								localStorage.getItem('agentAssistGenesysInteractionId'),
-								userId,
-								'INFO',
-								AgentAssistSplunkLoggingUtils.splunk_inner_context(
-									localStorage.getItem('agentAssistVoiceCallId'),
-									undefined,
-									undefined,
-									cardMetadata?.card_id
-								),
-								'AskMeAnythingCardCompleted'
-							)
-						);
-						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_outer_context(
+							'aa_knowledgeMessage.js',
+							localStorage.getItem('agentAssistGenesysInteractionId'),
+							userId,
+							'INFO',
+							AgentAssistSplunkLoggingUtils.splunk_inner_context(
+								localStorage.getItem('agentAssistVoiceCallId'),
+								undefined,
+								undefined,
+								cardMetadata?.card_id
+							),
+							'AskMeAnythingCardCompleted'
+						)
+					);
+					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 						this.loggedCards.add(cardMetadata?.card_id);
 					}
 					break;
@@ -311,20 +311,20 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					});
 					if (!this.loggedCards.has(cardMetadata?.card_id)) {
 						let splunkJsonString = JSON.stringify(
-							AgentAssistSplunkLoggingUtils.splunk_outer_context(
-								'aa_knowledgeMessage.js',
-								localStorage.getItem('agentAssistGenesysInteractionId'),
-								userId,
-								'WARN',
-								AgentAssistSplunkLoggingUtils.splunk_inner_context(
-									localStorage.getItem('agentAssistVoiceCallId'),
-									undefined,
-									undefined,
-									cardMetadata?.card_id
-								),
-								'AskMeAnythingCardAbandoned'
-							)
-						);
+						AgentAssistSplunkLoggingUtils.splunk_outer_context(
+							'aa_knowledgeMessage.js',
+							localStorage.getItem('agentAssistGenesysInteractionId'),
+							userId,
+							'WARN',
+							AgentAssistSplunkLoggingUtils.splunk_inner_context(
+								localStorage.getItem('agentAssistVoiceCallId'),
+								undefined,
+								undefined,
+								cardMetadata?.card_id
+							),
+							'AskMeAnythingCardAbandoned'
+						)
+					);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 						this.loggedCards.add(cardMetadata?.card_id);
 					}
@@ -383,10 +383,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				body: {
 					text: isAbandoned
 						? `We couldn't complete your request. No relevant information found at this time. As Agent Assist continues to grow and improve, more complete responses will become available.`
-						: content?.body?.[1]?.text?.text || '',
+						: content?.body?.[0]?.text?.text || '',
 					citation: null
 				},
-				list: isAbandoned ? null : content?.body?.[1]?.text?.list || null
+				list: isAbandoned ? null : content?.body?.[0]?.text?.list || null
 			};
 
 			if (!Array.isArray(this.cards)) {
@@ -556,10 +556,10 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				body: {
 					text: isAbandoned
 						? `We couldn't complete your request. No relevant information found at this time. As Agent Assist continues to grow and improve, more complete responses will become available.`
-						: content?.body?.[1]?.text?.text || '',
+						: content?.body?.[0]?.text?.text || '',
 					citation: null
 				},
-				list: isAbandoned ? null : content?.body?.[1]?.text?.list || null
+				list: isAbandoned ? null : content?.body?.[0]?.text?.list || null
 			};
 
 			if (!Array.isArray(this.cards)) {
@@ -674,40 +674,40 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			this.updateJumpToPresent();
 
 			if (isNewSummary) {
-				LWCLogger({
-					messageText:
-						'Post Call Summary Completed; Interaction ID: ' +
-						localStorage.getItem('agentAssistGenesysInteractionId') +
-						'; Agent Assist Session ID: ' +
-						localStorage.getItem('agentAssistVoiceCallId') +
-						'; Card ID: ' +
-						card?.card_id +
-						'; Summary Title: ' +
-						summaryTitle,
-					source: 'prepareKnowledgeCard | Post Call Summary',
-					level: 'info'
-				});
+			LWCLogger({
+				messageText:
+					'Post Call Summary Completed; Interaction ID: ' +
+					localStorage.getItem('agentAssistGenesysInteractionId') +
+					'; Agent Assist Session ID: ' +
+					localStorage.getItem('agentAssistVoiceCallId') +
+					'; Card ID: ' +
+					card?.card_id +
+					'; Summary Title: ' +
+					summaryTitle,
+				source: 'prepareKnowledgeCard | Post Call Summary',
+				level: 'info'
+			});
 
-				const statusString = card.isSumError ? 'failed' : 'success';
-				let splunkJsonString = JSON.stringify(
-					AgentAssistSplunkLoggingUtils.splunk_outer_context(
-						'aa_knowledgeMessage.js',
-						localStorage.getItem('agentAssistGenesysInteractionId'),
-						userId,
-						'INFO',
-						AgentAssistSplunkLoggingUtils.splunk_inner_context(
-							localStorage.getItem('agentAssistVoiceCallId'),
-							undefined,
-							undefined,
-							card.card_id,
-							undefined,
-							'PCS_generated',
-							statusString
-						),
-						'PCS_generated'
-					)
-				);
-				LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			const statusString = card.isSumError ? 'failed' : 'success';
+			let splunkJsonString = JSON.stringify(
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
+					'aa_knowledgeMessage.js',
+					localStorage.getItem('agentAssistGenesysInteractionId'),
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(
+						localStorage.getItem('agentAssistVoiceCallId'),
+						undefined,
+						undefined,
+						card.card_id,
+						undefined,
+						'PCS_generated',
+						statusString
+					),
+					'PCS_generated'
+				)
+			);
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 		}
 		} catch (error) {
 			this.showError('We are unable to retrieve Summary at this time');
@@ -961,14 +961,27 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						feedbackError: null
 					};
 				}
+				if (card.isSummary) {
+					return {
+						...card,
+						isLiked: true,
+						isDisLiked: false,
+						likeClass: 'like-green',
+						dislikeClass: '',
+						isLikeDisabled: 'opacity:1;',
+						isDislikeDisabled: 'opacity:0.4;',
+						showDislikeReasons: false,
+						feedbackError: null
+					};
+				}
 				return {
 					...card,
 					isLiked: true,
 					isDisLiked: false,
 					likeClass: 'like-green',
 					dislikeClass: '',
-					isLikeDisabled: 'opacity:1;',
-					isDislikeDisabled: 'opacity:0.4;',
+					isLikeDisabled: 'pointer-events:none; opacity:1;',
+					isDislikeDisabled: 'pointer-events:none; opacity:0.4;',
 					showDislikeReasons: false,
 					feedbackError: null
 				};
@@ -1059,24 +1072,24 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				}
 
 				let reasons = [
-					{
-						text: 'Not relevant',
-						isSelected: false,
-						buttonClass: 'slds-button_neutral',
-						disabled: false
-					},
-					{
-						text: 'Info not accurate',
-						isSelected: false,
-						buttonClass: 'slds-button_neutral',
-						disabled: false
-					},
-					{
-						text: 'Confusing Content',
-						isSelected: false,
-						buttonClass: 'slds-button_neutral',
-						disabled: false
-					}
+						{
+							text: 'Not relevant',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						},
+						{
+							text: 'Info not accurate',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						},
+						{
+							text: 'Confusing Content',
+							isSelected: false,
+							buttonClass: 'slds-button_neutral',
+							disabled: false
+						}
 				];
 
 				if (card.isSummary) {
@@ -1102,14 +1115,28 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					];
 				}
 
+				if (card.isSummary) {
+					return {
+						...card,
+						isLiked: false,
+						isDisLiked: true,
+						likeClass: '',
+						dislikeClass: 'dislike-red',
+						isLikeDisabled: 'opacity:0.4;',
+						isDislikeDisabled: 'opacity:1;',
+						disLikeReasons: reasons,
+						showDislikeReasons: true,
+						feedbackError: null
+					};
+				}
 				return {
 					...card,
 					isLiked: false,
 					isDisLiked: true,
 					likeClass: '',
 					dislikeClass: 'dislike-red',
-					isLikeDisabled: 'opacity:0.4;',
-					isDislikeDisabled: 'opacity:1;',
+					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
+					isDislikeDisabled: 'pointer-events:none; opacity:1;',
 					disLikeReasons: reasons,
 					showDislikeReasons: true,
 					feedbackError: null
@@ -1182,22 +1209,32 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					disabled: reason.text !== selectedReason
 				}));
 
+				if (card.isSummary) {
+					return {
+						...card,
+						disLikeReasons: updatedReasons,
+						showDislikeReasons: false,
+						dislikeClass: 'dislike-red',
+						isLikeDisabled: 'opacity:0.4;',
+						isDislikeDisabled: 'opacity:1;'
+					};
+				}
 				return {
 					...card,
 					disLikeReasons: updatedReasons,
 					showDislikeReasons: false,
 					dislikeClass: 'dislike-red',
-					isLikeDisabled: 'opacity:0.4;',
-					isDislikeDisabled: 'opacity:1;'
+					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
+					isDislikeDisabled: 'pointer-events:none; opacity:1;'
 				};
 			}
 			return card;
 		});
 		this.saveState();
 
-		const card = this.cards.find((c) => c.card_id === cardId);
+		const targetCard = this.cards.find((c) => c.card_id === cardId);
 		let data;
-		if (card?.isSummary) {
+		if (targetCard?.isSummary) {
 			data = {
 				version: '1.0',
 				event_type: 'pcs_feedback_event',
@@ -1292,8 +1329,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 		let splunkJsonString = JSON.stringify(
 			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_knowledgeMessage.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
+							'aa_knowledgeMessage.js',
+							localStorage.getItem('agentAssistGenesysInteractionId'),
 				userId,
 				'INFO',
 				AgentAssistSplunkLoggingUtils.splunk_inner_context(
@@ -1304,7 +1341,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				),
 				cardType
 			)
-		);		
+		);
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
 
@@ -1325,14 +1362,14 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
 
 		let cardType = 'KnowledgeCard_LinkClicked';
-		
+
 		if (card.card_AMA) {
 			cardType = 'AMA_LinkClicked';
 		} 
 
 		let splunkJsonString = JSON.stringify(
 			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_knowledgeMessage.js',
+                                'aa_knowledgeMessage.js',
 				interactionId,
 				userId,
 				'INFO',
@@ -1340,13 +1377,13 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				cardType
 			)
 		);
-
+                        	
 		LWCSplunkLogger({
 			jsonString: splunkJsonString,
 			eventName: 'AgentAssistUsageEvent'
 		});
 	}
-	
+
 	logKnowledgeCardToSplunk(cardId, status) {
 		try {
 			if (!cardId) return;
@@ -1416,5 +1453,4 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.error('Error logging expand/collapse', error);
 		}
 	}
-
 }
