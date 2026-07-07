@@ -246,6 +246,16 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 		this.subscribeToProxyMessageChannel();
 		this.handleContextError();
+
+		// Rehydrate on hard refresh
+		try {
+		const saved = sessionStorage.getItem('voiceCallState');
+		if (saved) {
+			this.applyState(JSON.parse(saved));
+		}
+		} catch (e) {
+			sessionStorage.removeItem('voiceCallState');
+		}
 	}
 
 	subscribeToProxyMessageChannel() {
@@ -510,6 +520,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.handleSetCustomerContextNotification(message.data);
 					}
 					break;
+
+				case 'CALL_CONNECTED': 
+					const state = {
+						voiceCallId: msg.voiceCallId,
+						status: msg.status
+					};
+						this.applyState(state);
+						this._saveState(state);
+						console.log('CALL_CONNECTED');
+					break;
+
 				default:
 			}
 		}
@@ -1704,6 +1725,27 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.logAAMinimized('AA_WINDOW_CLOSE');
 		}
 		
+	}
+
+	saveState(state) {
+	try {
+		sessionStorage.setItem('voiceCallState', JSON.stringify(state));
+	} catch (e) { /* storage full or unavailable */ }
+	}
+
+	_syncState(patch) {
+	try {
+		const saved = sessionStorage.getItem('voiceCallState');
+		if (!saved) return;
+		const updated = { ...JSON.parse(saved), ...patch };
+		sessionStorage.setItem('voiceCallState', JSON.stringify(updated));
+	} catch (e) { /* ignore */ }
+	}
+
+	applyState(state) {
+		Object.keys(state).forEach(key => {
+			if (key in this) this[key] = state[key];
+		});
 	}
 
 }

@@ -319,17 +319,43 @@ async setupWebSocketIoClient(token) {
 
                     this.websocket.on(AgentAssistLabels.SET_INTERACTION_CONTEXT_NOTIFICATION, (data, ack) => {
                         try {
-                        const messageContext = createMessageContext();
-                        this.aaSessionId = data?.data?.agent_assist_session_id;
-                        publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.SET_INTERACTION_CONTEXT_NOTIFICATION, data: data});
-                        // ✅ Send ACK back to server (include whatever the server expects)
-                            if (typeof ack === 'function') {
-                                ack(true); // if server expects a boolean
-                            }
-                        LWCLogger({ messageText: "set_interaction_context_notification Ack returned; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') +" Payload " + JSON.stringify(data), source: " aa_UtilsHum | setupWebSocketIoClient | set_interaction_context_notification", level: "info"});
+                            const messageContext = createMessageContext();
+                            this.aaSessionId = data?.data?.agent_assist_session_id;
+                            publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.SET_INTERACTION_CONTEXT_NOTIFICATION, data: data});
+                            // ✅ Send ACK back to server (include whatever the server expects)
+                                if (typeof ack === 'function') {
+                                    ack(true); // if server expects a boolean
+                                }
+                            LWCLogger({ messageText: "set_interaction_context_notification Ack returned; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') +" Payload " + JSON.stringify(data), source: " aa_UtilsHum | setupWebSocketIoClient | set_interaction_context_notification", level: "info"});
+                            let splunkJsonString = JSON.stringify(
+                                AgentAssistSplunkLoggingUtils.splunk_outer_context(
+                                    'aa_UtilsHum.js',
+                                    localStorage.getItem('agentAssistGenesysInteractionId'),
+                                    this.userId,
+                                    'INFO',
+                                    AgentAssistSplunkLoggingUtils.splunk_inner_context(
+                                        localStorage.getItem('agentAssistVoiceCallId')
+                                    ),
+                                    'AgentAssistSessionInitiated'
+                                )
+                            );
+                            LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
                         } catch (err) {
                             console.error('set_interaction_context_notification error', err);
                             LWCLogger({ messageText: "set_interaction_context_notification error; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') + " Error " + JSON.stringify(err), source: " aa_UtilsHum | setupWebSocketIoClient | set_interaction_context_notification", level: "error"});
+                            let splunkJsonString = JSON.stringify(
+                                AgentAssistSplunkLoggingUtils.splunk_outer_context(
+                                    'aa_UtilsHum.js',
+                                    localStorage.getItem('agentAssistGenesysInteractionId'),
+                                    this.userId,
+                                    'ERROR',
+                                    AgentAssistSplunkLoggingUtils.splunk_inner_context(
+                                        localStorage.getItem('agentAssistVoiceCallId')
+                                    ),
+                                    'AgentAssistSessionFailedToInitiate'
+                                )
+                            );
+                            LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
                         }
                     });
 
