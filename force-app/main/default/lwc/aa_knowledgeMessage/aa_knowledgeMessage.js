@@ -344,24 +344,30 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			console.log('prepareAskMeAnything: extracted replyContext:', JSON.stringify(replyContext));
 
 			if (!replyContext && cardMetadata?.reply_card_ids && cardMetadata.reply_card_ids.length > 0) {
-				const replyCardId = cardMetadata.reply_card_ids[0];
-				const repliedCard = this.cards.find((c) => c.card_id === replyCardId);
+				const repliedCard = cardMetadata.reply_card_ids
+					.map((id) => this.cards.find((c) => c.card_id === id))
+					.find((c) => c);
 
 				if (repliedCard) {
 					let contextText = repliedCard.body?.text || '';
 					if (repliedCard.list_subheader && repliedCard.list_subheader.length > 0) {
-						contextText = repliedCard.list_subheader[0].text;
+						contextText = repliedCard.list_subheader.map((item) => item.text).join(' ');
 					}
 					replyContext = {
 						header: repliedCard.header,
 						query: contextText,
-						card_id: replyCardId
+						card_id: repliedCard.card_id
 					};
 					console.log('prepareAskMeAnything: Constructed local replyContext:', JSON.stringify(replyContext));
 				} else {
-					console.log('prepareAskMeAnything: Replied card not found locally with ID:', replyCardId);
+					console.log('prepareAskMeAnything: Replied card not found locally with IDs:', cardMetadata.reply_card_ids);
 				}
 			}
+
+			const dynamicSubHeading = content?.body?.map((b) => b?.sub_heading?.text).filter(Boolean).join('\n') || '';
+			const dynamicListSubheader = content?.body?.reduce((acc, b) => acc.concat(b?.sub_heading?.list || []), []) || [];
+			const dynamicBodyText = content?.body?.map((b) => b?.text?.text).filter(Boolean).join('\n\n') || '';
+			const dynamicList = content?.body?.reduce((acc, b) => acc.concat(b?.text?.list || []), []) || [];
 
 			const card = {
 				card_id: cardMetadata?.card_id || Date.now(),
@@ -375,18 +381,18 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				reply: '',
 				replyContext,
 				header: content?.header || '',
-				sub_heading: content?.body?.[0]?.sub_heading?.text || '',
+				sub_heading: dynamicSubHeading,
 				isExpanded: false,
 				isMinimized: false,
 				contentClass: 'card-content-collapsible',
-				list_subheader: content?.body?.[0]?.sub_heading?.list || null,
+				list_subheader: dynamicListSubheader.length > 0 ? dynamicListSubheader : null,
 				body: {
 					text: isAbandoned
 						? `We couldn't complete your request. No relevant information found at this time. As Agent Assist continues to grow and improve, more complete responses will become available.`
-						: content?.body?.[0]?.text?.text || '',
+						: dynamicBodyText,
 					citation: null
 				},
-				list: isAbandoned ? null : content?.body?.[0]?.text?.list || null
+				list: isAbandoned ? null : (dynamicList.length > 0 ? dynamicList : null)
 			};
 
 			if (!Array.isArray(this.cards)) {
@@ -538,6 +544,11 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					console.error('Unknown card status => ', cardStatus);
 			}
 
+			const dynamicSubHeading = content?.body?.map((b) => b?.sub_heading?.text).filter(Boolean).join('\n') || '';
+			const dynamicListSubheader = content?.body?.reduce((acc, b) => acc.concat(b?.sub_heading?.list || []), []) || [];
+			const dynamicBodyText = content?.body?.map((b) => b?.text?.text).filter(Boolean).join('\n\n') || '';
+			const dynamicList = content?.body?.reduce((acc, b) => acc.concat(b?.text?.list || []), []) || [];
+
 			const card = {
 				card_id: cardMetadata?.card_id || Date.now(),
 				isLoading,
@@ -548,18 +559,18 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				isPinnable: true,
 				reply: '',
 				header: content?.header || '',
-				sub_heading: content?.body?.[0]?.sub_heading?.text || '',
+				sub_heading: dynamicSubHeading,
 				isExpanded: false,
 				isMinimized: false,
 				contentClass: 'card-content-collapsible',
-				list_subheader: content?.body?.[0]?.sub_heading?.list || null,
+				list_subheader: dynamicListSubheader.length > 0 ? dynamicListSubheader : null,
 				body: {
 					text: isAbandoned
 						? `We couldn't complete your request. No relevant information found at this time. As Agent Assist continues to grow and improve, more complete responses will become available.`
-						: content?.body?.[0]?.text?.text || '',
+						: dynamicBodyText,
 					citation: null
 				},
-				list: isAbandoned ? null : content?.body?.[0]?.text?.list || null
+				list: isAbandoned ? null : (dynamicList.length > 0 ? dynamicList : null)
 			};
 
 			if (!Array.isArray(this.cards)) {
@@ -1219,14 +1230,6 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						isDislikeDisabled: 'opacity:1;'
 					};
 				}
-				return {
-					...card,
-					disLikeReasons: updatedReasons,
-					showDislikeReasons: false,
-					dislikeClass: 'dislike-red',
-					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
-					isDislikeDisabled: 'pointer-events:none; opacity:1;'
-				};
 			}
 			return card;
 		});
