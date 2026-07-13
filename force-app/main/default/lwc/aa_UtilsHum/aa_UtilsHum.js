@@ -9,7 +9,7 @@ Modification Log:
 *****************************************************************************************************************************/
 
 
-import { publish, unsubscribe, APPLICATION_SCOPE, createMessageContext } from "lightning/messageService";
+import { publish,subscribe as lmsSubscribe, unsubscribe, APPLICATION_SCOPE, createMessageContext } from "lightning/messageService";
 import { subscribe, onError } from 'lightning/empApi';
 import hasAgentAssistPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Custom';
 import hasInteraction360Permission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Interaction360_Custom';
@@ -38,8 +38,13 @@ export default class AgentAssistWebsocket {
     connectionretrycount = 0 ;
     userId = Id;
     aaSessionId;
+    
+    agentAssistLMSSubscription = null;
+    messageContext = createMessageContext();
+
 
 async setupWebSocketIoClient(token) {
+    this.subscribeToAgentAssistMessageChannel(); //pawan
     this.connectionretrycount = 0;
     const messageContext = createMessageContext();
     console.log("hasAgentAssistPermission: " +this.showComponent);
@@ -401,9 +406,110 @@ async setupWebSocketIoClient(token) {
         else console.log('aa_UtilsHum | setupWebSocketIoClient |Websocket already connected.');
 
 }
+    //Pawa code
+    subscribeToAgentAssistMessageChannel() {
 
-async publishInteractionContext(interactionDetails){
+        if (this.agentAssistLMSSubscription) {
+            return;
+        }
+
+        console.log('Subscribing to VOICE_CALL_CHANNEL utils');
+
+        this.agentAssistLMSSubscription = lmsSubscribe(
+            this.messageContext,
+            VOICE_CALL_CHANNEL,
+            (message) => {
+                console.log(
+                    'Received LMS Message: voicecallchannel utils data :',
+                    JSON.stringify(message)
+                );
+                    console.log('messagetype :  ',message.type );
+                    console.log('AgentAssistLabels.CALL_STARTED :',AgentAssistLabels.CALL_STARTED);
+                    console.log(message.type === AgentAssistLabels.CALL_STARTED);
+                // Handle message here
+                switch (message.type) {
+
+                    case AgentAssistLabels.CALL_STARTED:
+                        console.log('SET_INTERACTION_CONTEXT received');
+                        this.publishInteractionContextWire(message);
+                        break;
+
+                    default:
+                        console.log('Unhandled event:', message.type);
+                }
+            },
+            { scope: APPLICATION_SCOPE }
+        );
+    }
+
+    cleanup() {
+
+        if (this.agentAssistLMSSubscription) {
+
+            unsubscribe(this.agentAssistLMSSubscription, () => {
+                console.log('LMS unsubscribed');
+            });
+
+            this.agentAssistLMSSubscription = null;
+        }
+    }
     
+    async publishInteractionContextWire(interactionDetails){
+        console.log('publishInteractionContext utils interactionDetails : wire ', JSON.stringify(interactionDetails));
+        
+        console.log('this.userId : ',this.userId,' ===interactionDetails.VoiceCallData.CreatedById',interactionDetails.VoiceCallData.CreatedById);
+        if(interactionDetails.VoiceCallData.RelatedRecordId !== null){
+            console.log('Insided interaction1');
+            return;
+        }
+            
+        try {
+
+            const newInteractionId = interactionDetails.VoiceCallData.Interaction_Id__c;
+            const previousInteractionId = localStorage.getItem('agentAssistGenesysInteractionId')
+            const newInteractionIdCheck = 'a' + newInteractionId;
+            console.log('newInteractionIdCheck ',newInteractionIdCheck,' previousInteractionId',previousInteractionId);
+            if (
+
+                previousInteractionId &&
+                previousInteractionId !== newInteractionIdCheck
+
+            ) {
+                console.log('Insided interaction2');
+                // Send end-interaction context for the previous interaction
+                if(this.userId===interactionDetails.VoiceCallData.CreatedById)
+                    await this.endInteraction(previousInteractionId);
+
+            }
+    
+    
+            if (
+
+                this.agentSalesforceId === interactionDetails.VoiceCallData.CreatedById &&
+                this.interactionId !== newInteractionId &&
+                interactionDetails.VoiceCallData.CallDisposition !== 'completed' && 
+                newInteractionId !== this.lastinteractionId
+
+            ) {
+
+                this.interactionId = newInteractionId;
+                const messageContext = createMessageContext(); 
+                publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE, data: interactionDetails});
+                console.log('PublishInteractioncontext utils data: wire',JSON.stringify({type: AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE, data: interactionDetails}));
+
+            }
+
+        } catch(error) {
+
+            LWCLogger({messageText: 'Error in publishInteractionContext: '+error, source: 'createWebSocketIoClient', level: 'error'});
+
+        }
+
+    }
+
+    //pawan code end
+async publishInteractionContext(interactionDetails){
+    console.log('publishInteractionContext utils interactionDetails : ', JSON.stringify(interactionDetails))
 	if(interactionDetails.data.payload.RelatedRecordId__c !== null){
         return;
     }
@@ -439,6 +545,7 @@ async publishInteractionContext(interactionDetails){
 			this.interactionId = newInteractionId;
 			const messageContext = createMessageContext();
 			publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.SET_INTERACTION_CONTEXT, data: interactionDetails.data.payload});
+            console.log('PublishInteractioncontext utils data: ',interactionDetails.data.payload);
 
 		}
 
@@ -571,6 +678,7 @@ async endInteraction(interactionId){
         }
     }
     disconnect() {
+        this.cleanup(); // pawan
         if (this.websocket?.connected) {
             this.websocket.disconnect();
         }
@@ -584,6 +692,7 @@ export const AgentAssistLabels = {
     POST_CALL_SUMMARY: 'transcript_summary',
     GET_INTERACTION_CONTEXT: 'get_interaction_context',
     SET_INTERACTION_CONTEXT: 'set_interaction_context',
+    SET_INTERACTION_CONTEXT_WIRE: 'set_interaction_context_wire',
     UPDATE_INTERACTION: 'update_interaction',
     SET_CUSTOMER_CONTEXT: 'set_customer_context',
     AGENT_FEEDBACK: 'agent_feedback',
@@ -600,7 +709,10 @@ export const AgentAssistLabels = {
     CONNECTION_END:'connection_end',
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
-    LIVE_TRANSCRIPTION: "live_transcription"
+    LIVE_TRANSCRIPTION: "live_transcription",
+    CALL_STARTED:"Call_Started",
+    SET_CUSTOMER_CONTEXT_WIRE : "SendCustomerContext",
+    END_INTERACTION_WIRE: 'end_interaction_event_wire'
 }
 
 export const AgentAssistEvents = {
@@ -872,4 +984,6 @@ export const AgentAssistSplunkLoggingUtils = {
 		Status: status,
 		PostCallSummaryOccurred: pcs_occurred !== undefined ? (pcs_occurred ? 'TRUE' : 'FALSE') : undefined
     })
+
+
 }

@@ -8,6 +8,7 @@ import { AgentAssistLabels, AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum'
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 import userId from '@salesforce/user/Id';
 
+
 export default class Aa_knowledgeAgentAssist extends LightningElement {
 	showknowledge = hasknowledge;
 	showAMA = hasAMAPermission;
@@ -27,7 +28,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	@wire(MessageContext)
 	messageContext;
 
-	connectedCallback() {
+	 connectedCallback() {
 		this.subscribeToMessageChannel();
 		this.handleStateLoad();
 		this.hasLogged = false;
@@ -40,6 +41,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 		}
 	}
 
+
 	subscribeToMessageChannel() {
 		if (!this.subscription) {
 			this.subscription = subscribe(
@@ -50,6 +52,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			);
 		}
 	}
+
 
 	handleStateLoad() {
 		try {
@@ -63,6 +66,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 				this.isOrchestrating = false;
 				this.orchestrationStatus = '';
 			}
+
 		} catch (e) {
 			console.error('Error loading state', e);
 		}
@@ -105,6 +109,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 		}
 	}
 
+
 	handleReplyCard(event) {
 		this.replyCard = event.detail;
 	}
@@ -121,6 +126,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 			this.isJumpInPresentVisible = true;
 		}
 
+		
 		//  Calculate scroll percentage
 		const scrollableHeight = scrollHeight - clientHeight;
 		const scrollPercent = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0;
@@ -128,22 +134,20 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 		//  Log ONLY ONCE per interaction
 		if (scrollPercent >= 20 && !this.hasLogged) {
 			this.hasLogged = true;
+			const interactionId = localStorage.getItem('agentAssistGenesysInteractionId');
+			const voiceCallId = localStorage.getItem('agentAssistVoiceCallId');
+
 			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_logging_context(
-					'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_outer_context(
 					'aa_knowledgeAgentAssist.js',
-					'handleScroll KC AMA PCS',
-					'AA Scroll',
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					AgentAssistSplunkLoggingUtils.splunk_agentAssistScrolled(
-						localStorage.getItem('agentAssistVoiceCallId'),
-						localStorage.getItem('agentAssistGenesysInteractionId'),
-						userId,
-						'TRUE'
-					)
+					interactionId,
+					userId,
+					'INFO',
+					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
+					'AA_Scroll'
+					
 				)
 			);
-
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 		}
 	}
@@ -187,7 +191,6 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 	}
 
 	get isShowAMA() {
-		console.log('isShowAMA---->' + this.isAMAEnabled && this.showAMA);
 		return this.isAMAEnabled && this.showAMA;
 	}
 
@@ -202,5 +205,17 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 
 	get isShowAO() {
 		return this.isAOEnabled && this.isOrchestrating;
+	}
+
+	get isShowKCAndAMA(){
+		return this.isKnowledgeCardEnabled && this.showknowledge && this.isAMAEnabled && this.showAMA;
+	}
+
+	get noKCPermission(){
+		return (this.showknowledge ? false : true);
+	}
+
+	get noAMAPermission(){
+		return (this.showAMA ? false : true);
 	}
 }

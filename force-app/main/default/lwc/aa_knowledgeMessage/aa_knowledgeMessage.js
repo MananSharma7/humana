@@ -368,7 +368,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 			const dynamicListSubheader = content?.body?.reduce((acc, b) => acc.concat(b?.sub_heading?.list || []), []) || [];
 			const dynamicBodyText = content?.body?.map((b) => b?.text?.text).filter(Boolean).join('\n\n') || '';
 			const dynamicList = content?.body?.reduce((acc, b) => acc.concat(b?.text?.list || []), []) || [];
-
+			
 			const card = {
 				card_id: cardMetadata?.card_id || Date.now(),
 				isLoading,
@@ -972,27 +972,14 @@ export default class Aa_knowledgeMessage extends LightningElement {
 						feedbackError: null
 					};
 				}
-				if (card.isSummary) {
 					return {
 						...card,
 						isLiked: true,
 						isDisLiked: false,
 						likeClass: 'like-green',
 						dislikeClass: '',
-						isLikeDisabled: 'opacity:1;',
-						isDislikeDisabled: 'opacity:0.4;',
-						showDislikeReasons: false,
-						feedbackError: null
-					};
-				}
-				return {
-					...card,
-					isLiked: true,
-					isDisLiked: false,
-					likeClass: 'like-green',
-					dislikeClass: '',
-					isLikeDisabled: 'pointer-events:none; opacity:1;',
-					isDislikeDisabled: 'pointer-events:none; opacity:0.4;',
+					isLikeDisabled: 'opacity:1;',
+					isDislikeDisabled: 'opacity:0.4;',
 					showDislikeReasons: false,
 					feedbackError: null
 				};
@@ -1126,28 +1113,14 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					];
 				}
 
-				if (card.isSummary) {
 					return {
 						...card,
 						isLiked: false,
 						isDisLiked: true,
-						likeClass: '',
-						dislikeClass: 'dislike-red',
-						isLikeDisabled: 'opacity:0.4;',
-						isDislikeDisabled: 'opacity:1;',
-						disLikeReasons: reasons,
-						showDislikeReasons: true,
-						feedbackError: null
-					};
-				}
-				return {
-					...card,
-					isLiked: false,
-					isDisLiked: true,
 					likeClass: '',
 					dislikeClass: 'dislike-red',
-					isLikeDisabled: 'pointer-events:none; opacity:0.4;',
-					isDislikeDisabled: 'pointer-events:none; opacity:1;',
+					isLikeDisabled: 'opacity:0.4;',
+					isDislikeDisabled: 'opacity:1;',
 					disLikeReasons: reasons,
 					showDislikeReasons: true,
 					feedbackError: null
@@ -1208,32 +1181,32 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		}
 	}
 	selectDislikeReason(event) {
-		const cardId = event.currentTarget.dataset.id;
-		const selectedReason = event.currentTarget.dataset.reason;
-
-		this.cards = this.cards.map((card) => {
-			if (card.card_id === cardId) {
-				const updatedReasons = card.disLikeReasons.map((reason) => ({
-					...reason,
-					isSelected: reason.text === selectedReason,
-					buttonClass: reason.text === selectedReason ? 'slds-button_brand' : 'slds-button_neutral',
-					disabled: reason.text !== selectedReason
-				}));
-
-				if (card.isSummary) {
-					return {
-						...card,
-						disLikeReasons: updatedReasons,
-						showDislikeReasons: false,
-						dislikeClass: 'dislike-red',
-						isLikeDisabled: 'opacity:0.4;',
-						isDislikeDisabled: 'opacity:1;'
-					};
-				}
-			}
-			return card;
-		});
-		this.saveState();
+        const cardId = event.currentTarget.dataset.id;
+        const selectedReason = event.currentTarget.dataset.reason;
+ 
+        this.cards = this.cards.map((card) => {
+            if (card.card_id === cardId) {
+                const updatedReasons = card.disLikeReasons.map((reason) => ({
+                    ...reason,
+                    isSelected: reason.text === selectedReason,
+                    buttonClass: reason.text === selectedReason ? 'slds-button_brand' : 'slds-button_neutral',
+                    disabled: reason.text !== selectedReason
+                }));
+ 
+                
+                    return {
+                        ...card,
+                        disLikeReasons: updatedReasons,
+                        showDislikeReasons: false,
+                        dislikeClass: 'dislike-red',
+                        isLikeDisabled: 'opacity:0.4;',
+                        isDislikeDisabled: 'opacity:1;'
+                    };
+                }
+ 
+            return card;
+        });
+        this.saveState();
 
 		const targetCard = this.cards.find((c) => c.card_id === cardId);
 		let data;

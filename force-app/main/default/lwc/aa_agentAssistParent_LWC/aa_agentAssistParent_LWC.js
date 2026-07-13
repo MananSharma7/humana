@@ -28,7 +28,6 @@ import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLoggi
 import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 import userId from '@salesforce/user/Id';
 
-
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
 	genesysLMSSubscription = null;
@@ -314,6 +313,46 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
+//pawan
+	async handlePlatformEventwire(response) {
+		//const payload = response.data.payload;
+		console.log('aa_agentAssistParent_LWC:Inside handle platform event 1', JSON.stringify(response));
+		const eventRecordId = response.recordId;
+		console.log('aa_agentAssistParent_LWC:Inside handle platform event 2 ', eventRecordId + ' ' + this.recordId);
+		if (
+			eventRecordId &&
+			(eventRecordId === this.recordId ||
+				(this.recordId && eventRecordId.includes(this.recordId)) ||
+				(this.recordId && this.recordId.includes(eventRecordId)))
+		) {
+			console.log('aa_agentAssistParent_LWC:Inside handle platformEvent matches current recordId.');
+
+			const callDisposition = response.VoiceCallData.CallDisposition;
+			const interactionId = response.VoiceCallData.Interaction_Id__c;
+			console.log(
+				'aa_agentAssistParent_LWC:Inside handle platform event 3: callDisposition ' +
+					callDisposition +
+					' interactionid : ' +
+					interactionId
+			);
+			if (callDisposition && callDisposition.toLowerCase() === 'completed') {
+				console.log('aa_agentAssistParent_LWC:Parent LWC Ending interaction (PLATFORM EVENT)');
+				this.websocket.endInteraction(interactionId);
+				
+				const endMsg = {
+					type: AgentAssistLabels.END_INTERACTION,
+					data: {
+						interactionId: interactionId,
+						interactingId: interactionId
+					}
+				};
+				publish(this.messageContext, VOICE_CALL_CHANNEL, endMsg);
+				console.log('aa_agentAssistParent_LWC:Parent LWC published END_INTERACTION to children PLATFORM EVENT');
+			}
+		}
+	}
+//pawan
+
 	async handlePlatformEvent(response) {
 		const payload = response.data.payload;
 		console.log('aa_agentAssistParent_LWC:Inside handle platform event 1', JSON.stringify(payload));
@@ -388,6 +427,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 	async handleAgentAssistMessage(message) {
 		console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | ', message?.type, ' : ', message?.data);
+		console.log('Parentlwc voice call data : ',JSON.stringify(message));
 		if (message?.type) {
 			switch (message.type) {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
@@ -531,6 +571,25 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						console.log('CALL_CONNECTED');
 					break;
 
+				case AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE:
+					console.log("AgentAssistLabels.CALL_STARTED case ",JSON.stringify(message));
+					this.sendInteractionContextWire(message.data);
+					break;
+
+				case AgentAssistLabels.SET_CUSTOMER_CONTEXT_WIRE:
+					console.log("Customer context wire case block ", JSON.stringify(message));
+					console.log("this.userSalesforceId === message?.VoiceCallData?.CreatedById",this.userSalesforceId," ",message?.VoiceCallData?.CreatedById," " ,this.userSalesforceId === message?.VoiceCallData?.CreatedById);
+					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
+						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
+						console.log("Related record block called",message.VoiceCallData.RelatedRecordId);
+					}
+					break;
+				case AgentAssistLabels.END_INTERACTION_WIRE:
+					if(this.userSalesforceId === message?.VoiceCallData?.CreatedById){
+						this.handlePlatformEventwire(message);
+						console.log("END_INTERACTION_WIRE record block called",message.VoiceCallData.RelatedRecordId);
+					}
+					break;
 				default:
 			}
 		}
@@ -786,6 +845,79 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			}
 		} catch (error) {}
 	}
+
+	//Pawan
+		async sendInteractionContextWire(interactionDetails) {
+		console.log(
+			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: wire ' + JSON.stringify(interactionDetails)
+		);
+		console.log('this.this.userSalesforceId ',this.userSalesforceId,' interactionDetails.VoiceCallData.CreatedById ',interactionDetails.VoiceCallData.CreatedById,' check ', interactionDetails.VoiceCallData.CreatedById ==this.userSalesforceId);
+		if(this.userSalesforceId !==interactionDetails?.VoiceCallData?.CreatedById)
+		{	console.log("inside user check for sent interaction : ", this.userSalesforceId !==interactionDetails.VoiceCallData.CreatedById);
+			return;
+		}
+		try {
+			this.voiceCallId = interactionDetails.recordId;
+			this.recordId = interactionDetails.recordId;
+			this.genesysInteractionId = 'a' + interactionDetails.VoiceCallData.Interaction_Id__c;
+			localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
+			if (hasSSOTokenPermission) {
+				this.websocket.emitEvent(
+					AgentAssistLabels.SET_INTERACTION_CONTEXT,
+					AgentAssistEvents.set_interaction_context(
+						this.genesysInteractionId,
+						'',
+						this.userNetworkId,
+						'',
+						this.userSalesforceId
+					)
+				);
+
+				// Notify children to reset state for new interaction
+				publish(this.messageContext, VOICE_CALL_CHANNEL, {
+					type: AgentAssistLabels.UPDATE_INTERACTION,
+					data: { genesysInteractionId: this.genesysInteractionId }
+				});
+
+				if(interactionDetails.VoiceCallData.CallDisposition!== 'completed')
+				{	
+					this.handleOpenAAUtility();
+				}
+			} else {
+			this.websocket.emitEvent(
+				AgentAssistLabels.SET_INTERACTION_CONTEXT,
+				AgentAssistEvents.set_interaction_context(
+					this.genesysInteractionId,
+					this.accessToken,
+					this.userNetworkId,
+					this.userEmail,
+					this.userSalesforceId
+					)
+				);
+
+				// Notify children to reset state for new interaction
+				publish(this.messageContext, VOICE_CALL_CHANNEL, {
+					type: AgentAssistLabels.UPDATE_INTERACTION,
+					data: { genesysInteractionId: this.genesysInteractionId }
+				});
+
+				if(interactionDetails.VoiceCallData.CallDisposition!== 'completed')
+				{	
+					this.handleOpenAAUtility();
+				}
+			}
+			LWCLogger({
+				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
+				source: 'sendInteractionContext | Send Interaction Context',
+				level: 'info'
+			});
+			
+		} catch (e) {
+			console.log('agentAssistUtilityPanel | sendInteractionContext | error: ' + e);
+			this.showError('Agent Assist has been disabled while we investigate an error: ' + e.message);
+		}
+	}
+	//Pawan
 	async sendInteractionContext(interactionDetails) {
 		console.log(
 			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails)
