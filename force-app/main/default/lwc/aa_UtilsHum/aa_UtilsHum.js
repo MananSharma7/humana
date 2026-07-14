@@ -472,6 +472,11 @@ export const AgentAssistEvents = {
                         type: "string",
                         description: "Unique identifier for the interaction, if voice this is genesys_interaction_id, if chat tbd"
                     },
+                    aa_client_application: {
+                        value: "CRM MP360",
+                        type: "string",
+                        description: "Client application identifier for reporting purposes"
+                    },
                     token: {
                         value: token,
                         type: "string",
