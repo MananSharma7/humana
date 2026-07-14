@@ -2,7 +2,6 @@ import { LightningElement, wire, api } from 'lwc';
 import { getRecord, getFieldValue, updateRecord } from 'lightning/uiRecordApi';
 import { publish, MessageContext } from 'lightning/messageService';
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
-
 import CALL_STATUS_FIELD from '@salesforce/schema/VoiceCall.CallDisposition';
 import RELATED_RECORD_ID_FIELD from '@salesforce/schema/VoiceCall.RelatedRecordId';
 import CALL_OUTCOME_FIELD from '@salesforce/schema/VoiceCall.Call_Outcome__c';
@@ -26,8 +25,9 @@ export default class Aa_voiceCallDetails extends LightningElement {
 
     
     connectedCallback() {
+        
         this.previousRelatedRecordId =localStorage.getItem('agentAssistPreviousRelatedRecordId') || null;
-        console.log('PreviousRelatedRecordId Restored ', this.previousRelatedRecordId)
+        
     }
 
     @wire(getRecord, {
@@ -43,9 +43,7 @@ export default class Aa_voiceCallDetails extends LightningElement {
             CALL_INTERACTIONEND_FIELD
         ]
     })
-    wiredVoiceCall({ data, error }) {
-         console.log('wiredVoiceCall invoked');
-        console.log('wire recordId =>', this.recordId);
+    wiredVoiceCall({ data, error }) {       
 
         if (error) {
             console.error('VoiceCall Error:', JSON.stringify(error));
@@ -66,7 +64,6 @@ export default class Aa_voiceCallDetails extends LightningElement {
         const interactionId = getFieldValue(data, CALL_INTERACTIONID_FIELD);
         this.isInteractionEnd = getFieldValue(data, CALL_INTERACTIONEND_FIELD);
         this.isInteractionSent = getFieldValue(data, CALL_INTERACTIONSENT_FIELD);
-        console.log('Interaction sent : ',this.isInteractionSent,'Endinteraction send : ',this.isInteractionEnd );
         
         //Call Started
         if (callDisposition === 'in-progress' && !this.isInteractionSent )
@@ -89,12 +86,9 @@ export default class Aa_voiceCallDetails extends LightningElement {
                 this.previousRelatedRecordId = null;
 
         }
-        console.log("Before customercontext voice call details ",relatedRecordId ," this.previousRelatedRecordId ", this.previousRelatedRecordId);
         // Send Customer Context
         if ( callDisposition === 'in-progress' && relatedRecordId && this.previousRelatedRecordId !== relatedRecordId && this.isInteractionSent) 
         {
-            console.log("After customercontext voice call details ",relatedRecordId ," this.previousRelatedRecordId ", this.previousRelatedRecordId);
-
             const payload = this.createPayload(
                 AgentAssistLabels.SET_CUSTOMER_CONTEXT_WIRE,
                 interactionId,
@@ -114,8 +108,6 @@ export default class Aa_voiceCallDetails extends LightningElement {
         // End Interaction
         if ( callDisposition === 'completed' && callOutcome && callReason && !this.isInteractionEnd )
         {   
-            console.log('Call Ended inside aavoice call details outcome : ' ,callOutcome,'Reason : ',
-            callReason,'Discomposition : ', callDisposition,'InteractionId : ', this.isInteractionEnd );
             const payload = this.createPayload(
                 AgentAssistLabels.END_INTERACTION_WIRE,
                 interactionId,

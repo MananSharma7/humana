@@ -245,16 +245,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 		this.subscribeToProxyMessageChannel();
 		this.handleContextError();
-
-		// Rehydrate on hard refresh
-		try {
-		const saved = sessionStorage.getItem('voiceCallState');
-		if (saved) {
-			this.applyState(JSON.parse(saved));
-		}
-		} catch (e) {
-			sessionStorage.removeItem('voiceCallState');
-		}
 	}
 
 	subscribeToProxyMessageChannel() {
@@ -313,30 +303,20 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
-//pawan
-	async handlePlatformEventwire(response) {
-		//const payload = response.data.payload;
-		console.log('aa_agentAssistParent_LWC:Inside handle platform event 1', JSON.stringify(response));
+
+	async handleEndEventWire(response) {
 		const eventRecordId = response.recordId;
-		console.log('aa_agentAssistParent_LWC:Inside handle platform event 2 ', eventRecordId + ' ' + this.recordId);
 		if (
 			eventRecordId &&
 			(eventRecordId === this.recordId ||
 				(this.recordId && eventRecordId.includes(this.recordId)) ||
 				(this.recordId && this.recordId.includes(eventRecordId)))
 		) {
-			console.log('aa_agentAssistParent_LWC:Inside handle platformEvent matches current recordId.');
 
 			const callDisposition = response.VoiceCallData.CallDisposition;
 			const interactionId = response.VoiceCallData.Interaction_Id__c;
-			console.log(
-				'aa_agentAssistParent_LWC:Inside handle platform event 3: callDisposition ' +
-					callDisposition +
-					' interactionid : ' +
-					interactionId
-			);
+
 			if (callDisposition && callDisposition.toLowerCase() === 'completed') {
-				console.log('aa_agentAssistParent_LWC:Parent LWC Ending interaction (PLATFORM EVENT)');
 				this.websocket.endInteraction(interactionId);
 				
 				const endMsg = {
@@ -347,11 +327,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					}
 				};
 				publish(this.messageContext, VOICE_CALL_CHANNEL, endMsg);
-				console.log('aa_agentAssistParent_LWC:Parent LWC published END_INTERACTION to children PLATFORM EVENT');
 			}
 		}
 	}
-//pawan
 
 	async handlePlatformEvent(response) {
 		const payload = response.data.payload;
@@ -427,7 +405,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 	async handleAgentAssistMessage(message) {
 		console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | ', message?.type, ' : ', message?.data);
-		console.log('Parentlwc voice call data : ',JSON.stringify(message));
 		if (message?.type) {
 			switch (message.type) {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
@@ -561,33 +538,21 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					}
 					break;
 
-				case 'CALL_CONNECTED': 
-					const state = {
-						voiceCallId: msg.voiceCallId,
-						status: msg.status
-					};
-						this.applyState(state);
-						this._saveState(state);
-						console.log('CALL_CONNECTED');
-					break;
-
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE:
-					console.log("AgentAssistLabels.CALL_STARTED case ",JSON.stringify(message));
 					this.sendInteractionContextWire(message.data);
+					console.log("sendInteractionContextWire parentlwc fired");
 					break;
 
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT_WIRE:
-					console.log("Customer context wire case block ", JSON.stringify(message));
-					console.log("this.userSalesforceId === message?.VoiceCallData?.CreatedById",this.userSalesforceId," ",message?.VoiceCallData?.CreatedById," " ,this.userSalesforceId === message?.VoiceCallData?.CreatedById);
 					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
 						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
-						console.log("Related record block called",message.VoiceCallData.RelatedRecordId);
 					}
 					break;
 				case AgentAssistLabels.END_INTERACTION_WIRE:
 					if(this.userSalesforceId === message?.VoiceCallData?.CreatedById){
-						this.handlePlatformEventwire(message);
-						console.log("END_INTERACTION_WIRE record block called",message.VoiceCallData.RelatedRecordId);
+						this.handleEndEventWire(message);
+						//this.handlePlatformEventwire(message);
+						
 					}
 					break;
 				default:
@@ -846,14 +811,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		} catch (error) {}
 	}
 
-	//Pawan
 		async sendInteractionContextWire(interactionDetails) {
 		console.log(
 			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: wire ' + JSON.stringify(interactionDetails)
 		);
-		console.log('this.this.userSalesforceId ',this.userSalesforceId,' interactionDetails.VoiceCallData.CreatedById ',interactionDetails.VoiceCallData.CreatedById,' check ', interactionDetails.VoiceCallData.CreatedById ==this.userSalesforceId);
+
 		if(this.userSalesforceId !==interactionDetails?.VoiceCallData?.CreatedById)
-		{	console.log("inside user check for sent interaction : ", this.userSalesforceId !==interactionDetails.VoiceCallData.CreatedById);
+		{	
 			return;
 		}
 		try {
@@ -917,7 +881,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.showError('Agent Assist has been disabled while we investigate an error: ' + e.message);
 		}
 	}
-	//Pawan
+	
 	async sendInteractionContext(interactionDetails) {
 		console.log(
 			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails)
@@ -947,7 +911,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if(interactionDetails.Call_Disposition__c!== 'completed')
 				{	
-					this.handleOpenAAUtility();
+					//this.handleOpenAAUtility();
 				}
 			} else {
 			this.websocket.emitEvent(
@@ -969,7 +933,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 				if(interactionDetails.Call_Disposition__c!== 'completed')
 				{	
-					this.handleOpenAAUtility();
+					//this.handleOpenAAUtility();
 				}
 			}
 			LWCLogger({
@@ -1857,27 +1821,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.logAAMinimized('AA_WINDOW_CLOSE');
 		}
 		
-	}
-
-	saveState(state) {
-	try {
-		sessionStorage.setItem('voiceCallState', JSON.stringify(state));
-	} catch (e) { /* storage full or unavailable */ }
-	}
-
-	_syncState(patch) {
-	try {
-		const saved = sessionStorage.getItem('voiceCallState');
-		if (!saved) return;
-		const updated = { ...JSON.parse(saved), ...patch };
-		sessionStorage.setItem('voiceCallState', JSON.stringify(updated));
-	} catch (e) { /* ignore */ }
-	}
-
-	applyState(state) {
-		Object.keys(state).forEach(key => {
-			if (key in this) this[key] = state[key];
-		});
 	}
 
 }
