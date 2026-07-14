@@ -420,6 +420,16 @@ Feature gate is owned by parent and websocket utility:
 - `MarketPoint_Agent_Assist_Live_Transcription`
 - `AA_Live_Transcription`
 
+### `aa_voiceCallDetails`
+
+Path: `force-app/main/default/lwc/aa_voiceCallDetails`
+
+Responsibilities:
+
+- Wires to the VoiceCall record fields to detect call status, outcome, and related records.
+- Publishes `CALL_STARTED`, `SET_CUSTOMER_CONTEXT_WIRE`, and `END_INTERACTION_WIRE` events to the LMS `VOICE_CALL_CHANNEL`.
+- Updates the VoiceCall record locally via `updateRecord` for interaction sent/ended flags.
+
 ### `aa_platformEventProxy`
 
 Path: `force-app/main/default/lwc/aa_platformEventProxy`

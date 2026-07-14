@@ -1,5 +1,5 @@
 public with sharing class AA_RecordReader {
-	@AuraEnabled(cacheable=true)
+	@AuraEnabled
 	public static SObject getRecordById(Id recordId, String objectApiName, List<String> fieldApiNames) {
 		// Build a safe SELECT clause from the incoming fields
 		if (recordId == null || String.isBlank(objectApiName) || fieldApiNames == null || fieldApiNames.isEmpty()) {
