@@ -461,44 +461,15 @@ export const AgentAssistEvents = {
     set_interaction_context: (interaction_id, token, user_network_id, user_email, salesforce_user_id) => ({
         version: "0.1", 
         event_type: "set_interaction_context", 
-        description: "Schema for knowledge cards sent to Salesforce from the Agent Assist system, either as a response to a question or a pure knowledge card.",
         data: {
-            card_metadata: {
-                type: "object",
-                properties: {
-                    interaction_id: {
-                        value: interaction_id,
-                        interaction_id_type: "voice",
-                        type: "string",
-                        description: "Unique identifier for the interaction, if voice this is genesys_interaction_id, if chat tbd"
-                    },
-                    aa_client_application: {
-                        value: "CRM MP360",
-                        type: "string",
-                        description: "Identifier for the client application for reporting segregation"
-                    },
-                    token: {
-                        value: token,
-                        type: "string",
-                        description: "JWT Token from Salesforce"
-                    },
-                    user_network_id: {
-                        value: user_network_id,
-                        type: "string",
-                        description: "Internal ID generated for each person (unique). Used to call other APIs"
-                    },
-                    user_email: {
-                        value: user_email,
-                        type: "string",
-                        description: "User Network Email. Used to identify the user's AD groups"
-                    },
-                    salesforce_user_id: {
-                        value: salesforce_user_id,
-                        type: "string",
-                        description: "(Optional) User's Salesforce User ID."
-                    }
-                },
-                required: ["token", "genesys_interaction_id", "user_network_id"]
+            interactionContext: {
+                interaction_id: interaction_id,
+                interaction_id_type: "voice",
+                aa_client_application: "CRM MP360",
+                token: token,
+                user_network_id: user_network_id,
+                user_email: user_email,
+                salesforce_user_id: salesforce_user_id
             }
         }
     })
