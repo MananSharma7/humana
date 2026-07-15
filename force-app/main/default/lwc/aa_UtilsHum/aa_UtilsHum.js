@@ -831,6 +831,7 @@ export const AgentAssistEvents = {
             card_metadata: {
             interaction_id: interaction_id,
             interaction_id_type: "voice",
+            aa_client_application: "CRM MP360",
             token: token,
             user_network_id: user_network_id,
             user_email: user_email,
