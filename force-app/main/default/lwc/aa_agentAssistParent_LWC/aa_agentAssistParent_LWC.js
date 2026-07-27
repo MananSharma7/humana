@@ -4,7 +4,7 @@ import hasInteraction360Permission from '@salesforce/customPermission/MarketPoin
 import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
 import { publish, subscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import AgentAssistWebsocket from 'c/aa_UtilsHum';
-import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+import { getRecord, getFieldValue, updateRecord } from 'lightning/uiRecordApi';
 import { AgentAssistLabels, AgentAssistEvents , AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
 import MessageChannel from '@salesforce/messageChannel/mp_ConsumerSearch_MessageChannel__c';
 import USER_RECORD_ID from '@salesforce/user/Id';
@@ -1320,16 +1320,23 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			: data.agent_assist_session_id;
 		this.aaSessionId = agentAssistSessionId;
 		console.log(
-			'aa_agentAssistParent_LWC | UpdateVoiceCallSessionId | before runVoiceCallSessionFlow | Session ID:' +
+			'aa_agentAssistParent_LWC | UpdateVoiceCallSessionId | Session ID:' +
 				data.agent_assist_session_id +
 				' agentAssistSessionId: ' +
 				agentAssistSessionId
 		);
 		try {
-			await runVoiceCallSessionFlow({ recordId: this.recordId, sessionId: agentAssistSessionId });
+			const fields = {};
+			fields['Id'] = this.recordId;
+			fields['AgentAssist_Session_ID__c'] = agentAssistSessionId;
+			
+			const recordInput = { fields };
+			
+			await updateRecord(recordInput);
+			console.log('aa_agentAssistParent_LWC | updateVoiceCallSessionId | Successfully updated VoiceCall via UI API');
 		} catch (error) {
 			console.log(
-				'aa_agentAssistParent_LWC | updateVoiceCallSessionId | runVoiceCallSessionFlow | error: ' +
+				'aa_agentAssistParent_LWC | updateVoiceCallSessionId | UI API update failed | error: ' +
 					JSON.stringify(error)
 			);
 		}
