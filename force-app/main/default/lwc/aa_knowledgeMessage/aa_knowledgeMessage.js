@@ -727,16 +727,14 @@ export default class Aa_knowledgeMessage extends LightningElement {
 
 	handleInteractionContext(message) {
 		try {
-			const messageData = message?.data?.data;
-			if (!messageData?.card_metadata) {
-				console.warn('handleInteractionContext: Missing card_metadata', JSON.stringify(message));
+			const messageData = message?.VoiceCallData;
+			if (!messageData) {
+				console.warn('aa_knowledgeMessage | handleInteractionContext: Missing card_metadata', JSON.stringify(message));
 				return;
 			}
-			const cardMetadata = messageData.card_metadata;
-			const newInteractionId = cardMetadata?.interaction_id;
-
+			const newInteractionId = message?.VoiceCallData?.Interaction_Id__c;
 			if (newInteractionId && this.interactionId && this.interactionId !== newInteractionId) {
-				console.log('handleInteractionContext: New Interaction ID detected. Clearing old knowledge cards.');
+				console.log('aa_knowledgeMessage | handleInteractionContext: New Interaction ID detected. Clearing old knowledge cards.');
 				this.cards = [];
 				localStorage.removeItem('aa_knowledge_cards_cache');
 				this.loggedCards.clear();
@@ -777,21 +775,18 @@ export default class Aa_knowledgeMessage extends LightningElement {
 					this.showError('Failed to connect, please log out and back in.');
 					break;
 				case AgentAssistLabels.END_INTERACTION:
-					console.log('Inside End knowledge/AMA*');
-					console.log('END_INTERACTION received with data:', JSON.stringify(message.data));
 					this.clearCards(message);
-					console.log('Call ended => ' + JSON.stringify(message, null, 2));
 					break;
 				default:
 			}
 		}
 	}
 	clearCards(message) {
-		console.log('clearCards: Attempting to clear. Current ID: ' + this.interactionId);
-		if (message && message.data) {
-			const incomingId = message.data.interactionId;
+
+		if (message && message.VoiceCallData) {
+			const incomingId = message.VoiceCallData.Interaction_Id__c;
 			console.log('clearCards: Incoming End Interaction ID: ' + incomingId);
-			if (this.interactionId && this.interactionId !== 'a' + incomingId) {
+			if (this.interactionId && this.interactionId !== incomingId) {
 				console.log(
 					'clearCards: Mismatch in Interaction ID, SKIPPING CLEAR. ' +
 						this.interactionId +

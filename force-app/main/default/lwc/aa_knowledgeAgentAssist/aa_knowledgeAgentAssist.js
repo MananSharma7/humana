@@ -144,8 +144,7 @@ export default class Aa_knowledgeAgentAssist extends LightningElement {
 					userId,
 					'INFO',
 					AgentAssistSplunkLoggingUtils.splunk_inner_context(voiceCallId),
-					'AA_Scroll'
-					
+					'AA_Scroll'					
 				)
 			);
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });

@@ -4,9 +4,8 @@ import hasInteraction360Permission from '@salesforce/customPermission/MarketPoin
 import hasKnowledgeCardPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Knowledge_Card_Custom';
 import { publish, subscribe, APPLICATION_SCOPE, MessageContext } from 'lightning/messageService';
 import AgentAssistWebsocket from 'c/aa_UtilsHum';
-import { getRecord, getFieldValue, updateRecord } from 'lightning/uiRecordApi';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
 import { AgentAssistLabels, AgentAssistEvents , AgentAssistSplunkLoggingUtils } from 'c/aa_UtilsHum';
-import MessageChannel from '@salesforce/messageChannel/mp_ConsumerSearch_MessageChannel__c';
 import USER_RECORD_ID from '@salesforce/user/Id';
 import USER_ID from '@salesforce/schema/User.Id';
 import USER_EMAIL from '@salesforce/schema/User.Email';
@@ -15,7 +14,6 @@ import getAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getAccess
 import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getRecordDetails';
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
-import PROXY_CHANNEL from '@salesforce/messageChannel/AgentAssistLWCMessengerMs__c';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 import { EnclosingUtilityId, updateUtility, open, getInfo } from 'lightning/platformUtilityBarApi';
 import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_SSO';
@@ -31,7 +29,6 @@ import userId from '@salesforce/user/Id';
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
 	genesysLMSSubscription = null;
-	consumerSearchLMSSubscription = null;
 	errorMessage = null;
 	isErrorFrameworkEnabled = false;
 	isIntContextError = false;
@@ -240,176 +237,33 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 
 		this.subscribeToAgentAssistMessageChannel();
-		this.subscribeToConsumerSearchMessageChannel();
+
 		this.websocket.setupWebSocketIoClient(this.accessToken);
 
-		this.subscribeToProxyMessageChannel();
 		this.handleContextError();
-	}
-
-	subscribeToProxyMessageChannel() {
-		if (!this.proxyLMSSubscription) {
-			console.log('aa_agentAssistParent_LWC:Subscribing to Proxy LMS Channel...');
-			this.proxyLMSSubscription = subscribe(
-				this.messageContext,
-				PROXY_CHANNEL,
-				(message) => {
-					console.log('aa_agentAssistParent_LWC:Proxy LMS Message Received:', JSON.stringify(message));
-					//Check this 
-					if (
-						message &&
-						message.data &&
-						message.data.payload &&
-						this.userSalesforceId == message.data.payload.CreatedById
-					) {
-						const payload = message.data.payload;
-						const enrichedPayload = { ...payload };
-
-						if (!enrichedPayload.sdrPersonId) {
-							const storedMemberId = localStorage.getItem('agentAssistInteractingMemberId');
-							if (storedMemberId) {
-								enrichedPayload.sdrPersonId = storedMemberId;
-								enrichedPayload.memberId = storedMemberId;
-							}
-						}
-
-						if (!enrichedPayload.genesysInteractionId) {
-							const storedGenesysId = localStorage.getItem('agentAssistGenesysInteractionId');
-							if (storedGenesysId) {
-								enrichedPayload.genesysInteractionId = storedGenesysId;
-							}
-						}
-						console.log(
-							'aa_agentAssistParent_LWC:Proxy LMS Message Before sendCustomerContext:',
-							JSON.stringify(enrichedPayload)
-						);
-						if (
-							enrichedPayload.RelatedRecordId__c != null &&
-							USER_RECORD_ID == enrichedPayload.CreatedById
-						) {
-							console.log(
-								'aa_agentAssistParent_LWC:Before Related record called from proxy lms: ',
-								enrichedPayload.RelatedRecordId__c
-							);
-							this.getRelatedRecordDetails(enrichedPayload.RelatedRecordId__c);
-							console.log('aa_agentAssistParent_LWC:After Related record called from proxy lms');
-						}
-					}
-
-					this.handlePlatformEvent(message);
-				},
-				{ scope: APPLICATION_SCOPE }
-			);
-		}
-	}
-
-
-	async handleEndEventWire(response) {
-		const eventRecordId = response.recordId;
-		if (
-			eventRecordId &&
-			(eventRecordId === this.recordId ||
-				(this.recordId && eventRecordId.includes(this.recordId)) ||
-				(this.recordId && this.recordId.includes(eventRecordId)))
-		) {
-
-			const callDisposition = response.VoiceCallData.CallDisposition;
-			const interactionId = response.VoiceCallData.Interaction_Id__c;
-
-			if (callDisposition && callDisposition.toLowerCase() === 'completed') {
-				this.websocket.endInteraction(interactionId);
-				
-				const endMsg = {
-					type: AgentAssistLabels.END_INTERACTION,
-					data: {
-						interactionId: interactionId,
-						interactingId: interactionId
-					}
-				};
-				publish(this.messageContext, VOICE_CALL_CHANNEL, endMsg);
-			}
-		}
-	}
-
-	async handlePlatformEvent(response) {
-		const payload = response.data.payload;
-		console.log('aa_agentAssistParent_LWC:Inside handle platform event 1', JSON.stringify(payload));
-		const eventRecordId = payload.Voice_Call__c;
-		console.log('aa_agentAssistParent_LWC:Inside handle platform event 2 ', eventRecordId + ' ' + this.recordId);
-		if (
-			eventRecordId &&
-			(eventRecordId === this.recordId ||
-				(this.recordId && eventRecordId.includes(this.recordId)) ||
-				(this.recordId && this.recordId.includes(eventRecordId)))
-		) {
-			console.log('aa_agentAssistParent_LWC:Inside handle platformEvent matches current recordId.');
-
-			const callDisposition = payload.Call_Disposition__c;
-			const interactionId = payload.InteractionId__c;
-			console.log(
-				'aa_agentAssistParent_LWC:Inside handle platform event 3: callDisposition ' +
-					callDisposition +
-					' interactionid : ' +
-					interactionId
-			);
-			if (callDisposition && callDisposition.toLowerCase() === 'completed') {
-				console.log('aa_agentAssistParent_LWC:Parent LWC Ending interaction (PLATFORM EVENT)');
-				this.websocket.endInteraction(interactionId);
-				
-				const endMsg = {
-					type: AgentAssistLabels.END_INTERACTION,
-					data: {
-						interactionId: interactionId,
-						interactingId: interactionId
-					}
-				};
-				publish(this.messageContext, VOICE_CALL_CHANNEL, endMsg);
-				console.log('aa_agentAssistParent_LWC:Parent LWC published END_INTERACTION to children PLATFORM EVENT');
-			}
-		}
 	}
 
 	subscribeToAgentAssistMessageChannel() {
 		if (!this.agentAssistLMSSubscription) {
-			console.log('aa_agentAssistParent_LWC:Received a message in AgentAssistMessageChannel');
 			this.agentAssistLMSSubscription = subscribe(
 				this.messageContext,
 				VOICE_CALL_CHANNEL,
 				(event) => {
-					console.log('VoiceCall Message arrived');
 					this.handleAgentAssistMessage(event);
-					console.log('aa_agentAssistParent_LWC:Received a messageevent => ' + JSON.stringify(event));
+					console.log('aa_agentAssistParent_LWC | subscribeToAgentAssistMessageChannel |Received a MessageEvent => ' + JSON.stringify(event));
 				},
 				{ scope: APPLICATION_SCOPE }
 			);
 		}
 	}
 
-	subscribeToConsumerSearchMessageChannel() {
-		if (!this.consumerSearchLMSSubscription) {
-			console.log('Received a message in ConsumerSearchMessageChannel');
-			this.consumerSearchLMSSubscription = subscribe(
-				this.messageContext,
-				MessageChannel,
-				(event) => {
-					console.log('Consumer search messenge arrived: ' + JSON.stringify(event));
-					this.handleConsumerCallback(event);
-				},
-				{ scope: APPLICATION_SCOPE }
-			);
-		}
-	}
-
-	async handleConsumerCallback(message) {
-		console.log(message);
-	}
 	async handleAgentAssistMessage(message) {
 		console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | ', message?.type, ' : ', message?.data);
 		if (message?.type) {
 			switch (message.type) {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | set_interaction_context');
-					this.sendInteractionContext(message.data);
+					this.sendInteractionContext(message);
 					let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
 						'INFO',
 						'aa_agentAssistParent_LWC.js',
@@ -426,6 +280,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.handlePopOutLogCall();
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
+					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | SET_CUSTOMER_CONTEXT');
+					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
+						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
+					}
 					break;
 				case AgentAssistLabels.AGENT_FEEDBACK:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | agent_feedback');
@@ -433,8 +291,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					break;
 				case AgentAssistLabels.SET_INTERACTION_RESPONSE:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | SET_INTERACTION_RESPONSE');
-					console.log('voiceCallId: ' + this.voiceCallId);
-					console.log('message.data: ' + JSON.stringify(message.data));
 					if (!this.isErrorFrameworkEnabled) {
 					try {
 						if (this.voiceCallId != null) {
@@ -460,21 +316,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.showError('Failed to connect, please log out and back in. ' + message.data);
 					this.updateStatus('disconnected');
 					break;
-				case AgentAssistLabels.UPDATE_INTERACTION:
-					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | update_interaction');
-					//Update CRM Interaction__c with Agent Assist ID in data
-					this.agentAssistId = message.data?.agent_assist_session_id;
-					if (
-						this.recentInteractionData &&
-						this.recentInteractionData?.Interaction_Record_ID__c != this.interactionRecordId
-					) {
-						console.log(
-							'aa_agentAssistParent_LWC | handleAgentAssistMessage | update_interaction1>>' +
-								this.recentInteractionData
-						);
-						this.updateInteraction(this.recentInteractionData);
-					}
-					break;
 				case AgentAssistLabels.END_INTERACTION:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | end_interaction');
 					this.isIntContextError = false;
@@ -485,7 +326,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					localStorage.removeItem('int_context_error_message');
 					localStorage.removeItem('cust_context_error');
 					localStorage.removeItem('cust_context_error_message');
-					this.endInteraction(message.data.interactingId);
+					this.endInteraction('a'+ message.VoiceCallData.Interaction_Id__c);
 					break;
 				case AgentAssistLabels.CONNECTION_END:
 					this.updateStatus('disconnected');
@@ -537,33 +378,15 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.handleSetCustomerContextNotification(message.data);
 					}
 					break;
-
-				case AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE:
-					this.sendInteractionContextWire(message.data);
-					console.log("sendInteractionContextWire parentlwc fired");
-					break;
-
-				case AgentAssistLabels.SET_CUSTOMER_CONTEXT_WIRE:
-					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
-						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
-					}
-					break;
-				case AgentAssistLabels.END_INTERACTION_WIRE:
-					if(this.userSalesforceId === message?.VoiceCallData?.CreatedById){
-						this.handleEndEventWire(message);
-						//this.handlePlatformEventwire(message);
-						
-					}
-					break;
 				default:
 			}
 		}
 	}
 
 	endInteraction(interactionId) {
-		console.log('agentAssistUtilityPanel | endInteraction | data: ' + JSON.stringify(interactionId));
+		console.log('aa_agentAssistParent_LWC | endInteraction | data: ' + JSON.stringify(interactionId));
 		try {
-			if ('a' + interactionId == this.genesysInteractionId) {
+			if ( interactionId == this.genesysInteractionId) {
 				this.lastgenesysInteractionId = this.genesysInteractionId;
 				this.websocket.emitEvent(
 					AgentAssistLabels.END_INTERACTION,
@@ -581,7 +404,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				this.recordId = null;
 				this.relatedRecordId = null;
 				this.stopUtilityMonitor();
-				// Clear Session Storage
 				localStorage.removeItem('agentAssistVoiceCallId');
 				localStorage.removeItem('agentAssistGenesysInteractionId');
 				localStorage.removeItem('agentAssistInteractingMemberId');
@@ -750,27 +572,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.stoppolling = true;
 	}
 
-	displayAuthError() {
-		let objError = arguments[0];
-		this.ssoMessage = objError.ssomessage;
-		this.showSSOMessage = objError.showssomessage;
-		this.showAgentAssist = objError.showAgentAssist;
-		this.isRecoverableError = objError.isRecoverableError;
-		this.errorMessage = objError.sUImessage;
-		this.tokenretrycount = objError.tokenretrycount;
-		this.authretrycount = objError.tokenauthretrycount;
-		if (!this.isRecoverableError) this.unsubscribeToMessageChannel();
-
-		//Log error in CRM Error Log Object
-		logError({
-			sMessage: objError.errorMessage,
-			sClass: objError.class,
-			sMethod: objError.smethod,
-			sExceptionType: 'Component Error',
-			sErrorType: 'AgentAssistError'
-		});
-		LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
-	}
 
 	async initializeWebsocketAfterTokenRetrieval() {
 		try {
@@ -811,15 +612,42 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		} catch (error) {}
 	}
 
-		async sendInteractionContextWire(interactionDetails) {
-		console.log(
-			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: wire ' + JSON.stringify(interactionDetails)
-		);
+	async sendInteractionContext(interactionDetails) {
 
-		if(this.userSalesforceId !==interactionDetails?.VoiceCallData?.CreatedById)
-		{	
+		if(interactionDetails.VoiceCallData.RelatedRecordId !== null){
+            return;
+        }
+
+		if(this.userSalesforceId !==interactionDetails?.VoiceCallData?.CreatedById){	
 			return;
 		}
+
+		try {
+            const newInteractionId = interactionDetails.VoiceCallData.Interaction_Id__c;
+            const previousInteractionId = localStorage.getItem('agentAssistGenesysInteractionId')
+            const newInteractionIdCheck = 'a' + newInteractionId;
+            if (
+
+                previousInteractionId &&
+                previousInteractionId !== newInteractionIdCheck
+
+            ) { 
+                // Send end-interaction context for the previous interaction
+                if(this.userSalesforceId===interactionDetails.VoiceCallData.CreatedById){
+					
+					this.endInteraction(previousInteractionId);
+					
+				}
+                   
+				
+            }
+        } catch(error) {
+
+            LWCLogger({messageText: 'Error in publishInteractionContext: '+error, source: 'createWebSocketIoClient', level: 'error'});
+
+        }
+
+
 		try {
 			this.voiceCallId = interactionDetails.recordId;
 			this.recordId = interactionDetails.recordId;
@@ -881,78 +709,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.showError('Agent Assist has been disabled while we investigate an error: ' + e.message);
 		}
 	}
-	
-	async sendInteractionContext(interactionDetails) {
-		console.log(
-			'lwc-agentAssistUtilityPanel | sendInteractionContext | data: ' + JSON.stringify(interactionDetails)
-		);
-		try {
-			this.voiceCallId = interactionDetails.Voice_Call__c;
-			this.recordId = interactionDetails.Voice_Call__c;
-			this.genesysInteractionId = 'a' + interactionDetails.InteractionId__c;
-			localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
-			if (hasSSOTokenPermission) {
-				this.websocket.emitEvent(
-					AgentAssistLabels.SET_INTERACTION_CONTEXT,
-					AgentAssistEvents.set_interaction_context(
-						this.genesysInteractionId,
-						'',
-						this.userNetworkId,
-						'',
-						this.userSalesforceId
-					)
-				);
-
-				// Notify children to reset state for new interaction
-				publish(this.messageContext, VOICE_CALL_CHANNEL, {
-					type: AgentAssistLabels.UPDATE_INTERACTION,
-					data: { genesysInteractionId: this.genesysInteractionId }
-				});
-
-				if(interactionDetails.Call_Disposition__c!== 'completed')
-				{	
-					//this.handleOpenAAUtility();
-				}
-			} else {
-			this.websocket.emitEvent(
-				AgentAssistLabels.SET_INTERACTION_CONTEXT,
-				AgentAssistEvents.set_interaction_context(
-					this.genesysInteractionId,
-					this.accessToken,
-					this.userNetworkId,
-					this.userEmail,
-					this.userSalesforceId
-					)
-				);
-
-				// Notify children to reset state for new interaction
-				publish(this.messageContext, VOICE_CALL_CHANNEL, {
-					type: AgentAssistLabels.UPDATE_INTERACTION,
-					data: { genesysInteractionId: this.genesysInteractionId }
-				});
-
-				if(interactionDetails.Call_Disposition__c!== 'completed')
-				{	
-					//this.handleOpenAAUtility();
-				}
-			}
-			LWCLogger({
-				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
-				source: 'sendInteractionContext | Send Interaction Context',
-				level: 'info'
-			});
-		} catch (e) {
-			console.log('agentAssistUtilityPanel | sendInteractionContext | error: ' + e);
-			this.showError('Agent Assist has been disabled while we investigate an error: ' + e.message);
-		}
-	}
 
 	async getRelatedRecordDetails(relatedRecordId) {
-		console.log('arrived at getRelatedRecordDetails');
+
 		await getRelatedRecord({ relatedRecordId: relatedRecordId })
 			.then((result) => {
 				console.log(
-					'agentAssistUtilityPanel | sendCustomerContext | getEnterpriseId | result: ' +
+					'aa_agentAssistParent_LWC | getRelatedRecordDetails | getEnterpriseId | result: ' +
 						JSON.stringify(result)
 				);
 				try {
@@ -961,7 +724,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.custId = result.custID;
 					this.memberType = result.type;
 					localStorage.setItem('agentAssistInteractingMemberId', this.memberID);
-					console.log('Before websocket emit for set customer context in P-lwc');
 					if (this.isNotEmpty(this.sdrPersonId) || this.isNotEmpty(this.custId)) {
 						this.websocket.emitEvent(
 							AgentAssistLabels.SET_CUSTOMER_CONTEXT,
@@ -973,7 +735,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 								true
 							)
 						);
-						console.log('Customer context sent');
 						LWCLogger({
 							messageText:
 								'Customer context sent; Interaction ID: ' +
@@ -984,7 +745,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 							level: 'info'
 						});
 					} else {
-						console.log('Cust id or Sdr member id is null');
 						LWCLogger({
 							messageText:
 								'Customer context not set, Customer ID or SDR Member ID was null; Interaction ID: ' +
@@ -1187,23 +947,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
     displayAuthError() {
         let objError = arguments[0];
-        this.ssoMessage = objError.ssomessage;
-        this.showSSOMessage = objError.showssomessage;
-        this.showAgentAssist = objError.showAgentAssist;
-        this.isRecoverableError = objError.isRecoverableError;
-        this.errorMessage = objError.sUImessage;
-        this.tokenretrycount = objError.tokenretrycount;
-        this.authretrycount = objError.tokenauthretrycount;
-		if (!this.isRecoverableError) this.unsubscribeToMessageChannel();
-
-        //Log error in CRM Error Log Object
-		logError({
-			sMessage: objError.errorMessage,
-			sClass: objError.class,
-			sMethod: objError.smethod,
-			sExceptionType: 'Component Error',
-			sErrorType: 'AgentAssistError'
-		});
 		LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
     }
 
@@ -1246,70 +989,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
             }
 		} catch (error) {}
     }
-	async sendCustomerContext(data) {
-		console.log(
-			'PLW inside sendcustomer agentAssistUtilityPanel | sendCustomerContext | data: ' + JSON.stringify(data)
-		);
-
-		try {
-			if (
-				this.lastgenesysInteractionId != this.genesysInteractionId &&
-				this.genesysInteractionId != null &&
-				this.Call_Disposition__c != 'completed'
-			) {
-				if (
-					data != null &&
-					data.memberId != null &&
-					data.sdrPersonId != null &&
-					data.memberId !== undefined &&
-					data.sdrPersonId !== undefined
-				) {
-						this.memberId = data.memberId;
-					this.sdrPersonId = this.currentmemeberenterpriseid = data.sdrPersonId;
-					this.memberType = this.currentmembertype = data.memberType;
-						this.custId = data.custId;
-						localStorage.setItem('agentAssistInteractingMemberId', this.memberId);
-
-						console.log('aa_agentAssistParent_LWC | before websocket emit from send customer context in plwc');
-					if (this.isNotEmpty(this.sdrPersonId) && this.isNotEmpty(this.custId)) {
-							this.websocket.emitEvent(
-								AgentAssistLabels.SET_CUSTOMER_CONTEXT,
-								AgentAssistEvents.set_customer_context(
-									this.memberType,
-									this.sdrPersonId,
-									this.custId,
-									this.genesysInteractionId,
-									true
-								)
-							);
-							console.log('aa_agentAssistParent_LWC |Customer context sent');
-							return;
-					} else {
-						console.log('aa_agentAssistParent_LWC |Cust id or Sdr member id is null');
-						}
-				} else if (data.RelatedRecordId__c != null && data.RelatedRecordId__c != this.relatedRecordId) {
-						this.relatedRecordId = data.RelatedRecordId__c;
-						console.log('aa_agentAssistParent_LWC |sendCustomerContext: Using Related Record ID.');
-						this.getRelatedRecordDetails(data.RelatedRecordId__c);
-						return;
-				} else {
-					console.log(
-						'aa_agentAssistParent_LWC |sendCustomerContext: No explicit data provided. ' +
-							JSON.stringify(data)
-					);
-						}
-				console.log('aa_sendCustomerContext|END: Using provided explicit data.');
-				return;
-			}
-		} catch (e) {
-			this.showError(
-				'aa_agentAssistParent_LWC | sendCustomerContext | Agent Assist has been disabled while we investigate an error: ' +
-					e.message
-			);
-			console.log('aa_agentAssistParent_LWC | sendCustomerContext | error: ' + e);
-		}
-	}
-	
+		
 	isNotEmpty(value) {
 		return value !== null && value !== undefined && value !== '' && value.trim() !== '';
 	}
@@ -1320,23 +1000,16 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			: data.agent_assist_session_id;
 		this.aaSessionId = agentAssistSessionId;
 		console.log(
-			'aa_agentAssistParent_LWC | UpdateVoiceCallSessionId | Session ID:' +
+			'aa_agentAssistParent_LWC | UpdateVoiceCallSessionId | before runVoiceCallSessionFlow | Session ID:' +
 				data.agent_assist_session_id +
 				' agentAssistSessionId: ' +
 				agentAssistSessionId
 		);
 		try {
-			const fields = {};
-			fields['Id'] = this.recordId;
-			fields['AgentAssist_Session_ID__c'] = agentAssistSessionId;
-			
-			const recordInput = { fields };
-			
-			await updateRecord(recordInput);
-			console.log('aa_agentAssistParent_LWC | updateVoiceCallSessionId | Successfully updated VoiceCall via UI API');
+			await runVoiceCallSessionFlow({ recordId: this.recordId, sessionId: agentAssistSessionId });
 		} catch (error) {
 			console.log(
-				'aa_agentAssistParent_LWC | updateVoiceCallSessionId | UI API update failed | error: ' +
+				'aa_agentAssistParent_LWC | updateVoiceCallSessionId | runVoiceCallSessionFlow | error: ' +
 					JSON.stringify(error)
 			);
 		}

@@ -133,14 +133,10 @@ export default class Aa_interaction360 extends LightningElement {
 		if (message?.type) {
 			switch (message.type) {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
-					this.checkAndSetInteractionContext(message.data.InteractionId__c);
-					break;
-				case AgentAssistLabels.SET_INTERACTION_CONTEXT_WIRE:
-					this.checkAndSetInteractionContextWire(message.data.VoiceCallData.Interaction_Id__c);
+					this.checkAndSetInteractionContext(message.VoiceCallData.Interaction_Id__c);
 					break;
 				case AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY:
 					this.prepareIntHistoryDataLayout(message);
-
 					if (this.callHistories.length == 0) {
 						let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
 							'aa_interaction360.js',
@@ -154,13 +150,11 @@ export default class Aa_interaction360 extends LightningElement {
 						));
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 					}
-					
 					break;
 				case AgentAssistLabels.ERROR:
 					this.showError('We are unable to retrieve Interaction360');
 					break;
 				case AgentAssistLabels.END_INTERACTION:
-					console.log('Interaction360 END_INTERACTION received. Data:', JSON.stringify(message.data));
 					this.clearInteraction(message);
 					break;
 				case 'live_summary':
@@ -276,21 +270,8 @@ export default class Aa_interaction360 extends LightningElement {
 		}
 	}
 
-	checkAndSetInteractionContext(newInteractionId) {
-		if (newInteractionId && this.customerInteractionId && this.customerInteractionId !== newInteractionId) {
-			console.log(
-				'Interaction360 checkAndSetInteractionContext: New Interaction ID detected. Clearing old data.'
-			);
-			this.callHistories = [];
-			this.errorMessage = '';
-			localStorage.removeItem('aa_interaction_history_cache');
-			
-		}
-		this.customerInteractionId = newInteractionId;
-		this.saveState();
-	}
 
-	checkAndSetInteractionContextWire(newInteractionId) {
+	checkAndSetInteractionContext(newInteractionId) {
 		if (newInteractionId && this.customerInteractionId && this.customerInteractionId !== newInteractionId) {
 		
 			this.callHistories = [];
@@ -308,12 +289,12 @@ export default class Aa_interaction360 extends LightningElement {
 				this.customerInteractionId
 		);
 		
-		if (this.customerInteractionId && this.customerInteractionId !== message.data.interactionId) {
+		if (this.customerInteractionId && this.customerInteractionId !== message.VoiceCallData.Interaction_Id__c) {
 			console.log(
 				'Interaction360 clearInteraction: Mismatch in Customer Interaction ID, SKIPPING CLEAR. ' +
 					this.customerInteractionId +
 					' vs ' +
-					message.data.interactionId
+					message.VoiceCallData.Interaction_Id__c
 			);
 			return;
 		}

@@ -2,7 +2,7 @@ import { LightningElement, api, wire, track } from 'lwc';
 import { publish, MessageContext } from 'lightning/messageService';
 import AGENTASSISTLMS from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import { AgentAssistLabels, AgentAssistEvents } from 'c/aa_UtilsHum';
-import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
+import LWCLogger from '@salesforce/apex/AA_LoggerLWC.LogFromLWC';
 
 export default class Aa_askMeAnything extends LightningElement {
 	message = '';
@@ -86,19 +86,7 @@ export default class Aa_askMeAnything extends LightningElement {
 			let uuid = this.generateUUID();
 			let data = AgentAssistEvents.ask_me_anything_query(text, uuid, reply, replycardids);
 
-			LWCLogger({
-				messageText:
-					'AMA Card surfaced; Interaction ID: ' +
-					data?.data?.card_metadata?.interaction_id +
-					'; Agent Assist Session ID: ' +
-					localStorage.getItem('agentAssistVoiceCallId') +
-					'; AMA Card Title: ' +
-					data?.data?.content?.query?.text +
-					'; AMA Query ID: ' +
-					data?.data?.card_metadata?.query_id,
-				source: 'AA | askQuery',
-				level: 'info'
-			});
+			LWCLogger({ messageText: "AMA Card surfaced; Interaction ID: " + data?.data?.card_metadata?.interaction_id + "; Agent Assist Session ID: " + localStorage.getItem('agentAssistVoiceCallId') + "; AMA Card Title: " + data?.data?.content?.query?.text + "; AMA Query ID: " + data?.data?.card_metadata?.query_id, source: "AA | askQuery", level: "info" });
 
 			console.log('Data => ' + JSON.stringify(data, null, 2));
 
