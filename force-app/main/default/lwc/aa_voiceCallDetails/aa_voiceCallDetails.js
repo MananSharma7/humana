@@ -11,6 +11,7 @@ import CALL_INTERACTIONID_FIELD from '@salesforce/schema/VoiceCall.Interaction_I
 import CALL_INTERACTIONSENT_FIELD from '@salesforce/schema/VoiceCall.Voice_Call_Event_Created__c';
 import CALL_INTERACTIONEND_FIELD from '@salesforce/schema/VoiceCall.Interaction_Ended__c';
 import { AgentAssistLabels } from 'c/aa_UtilsHum';
+import hasAgentAssistPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Custom';
 
 export default class Aa_voiceCallDetails extends LightningElement {
 
@@ -22,6 +23,7 @@ export default class Aa_voiceCallDetails extends LightningElement {
     isInteractionSent;
     isInteractionEnd;
     previousRelatedRecordId = null;
+    aa_Permission = hasAgentAssistPermission;
 
     
     connectedCallback() {
@@ -46,15 +48,18 @@ export default class Aa_voiceCallDetails extends LightningElement {
     wiredVoiceCall({ data, error }) {       
 
         if (error) {
-            console.error('VoiceCall Error:', JSON.stringify(error));
+            console.error('aa_voiceCallDetails | wiredVoiceCall | VoiceCall Error:', JSON.stringify(error));
             return;
         }
 
         if (!data) {
             return;
         }
+        
+        if(!this.aa_Permission){
+            return;
+        }
 
-        console.log('VoiceCall Record Data aa_voiceCallDetails:', JSON.stringify(data));
 
         const callDisposition = getFieldValue(data, CALL_STATUS_FIELD);
         const relatedRecordId = getFieldValue(data, RELATED_RECORD_ID_FIELD);
@@ -65,11 +70,10 @@ export default class Aa_voiceCallDetails extends LightningElement {
         this.isInteractionEnd = getFieldValue(data, CALL_INTERACTIONEND_FIELD);
         this.isInteractionSent = getFieldValue(data, CALL_INTERACTIONSENT_FIELD);
         
-        //Call Started
         if (callDisposition === 'in-progress' && !this.isInteractionSent )
             {
                 const payload = this.createPayload(
-                    AgentAssistLabels.CALL_STARTED,
+                    AgentAssistLabels.SET_INTERACTION_CONTEXT,
                     interactionId,
                     createdById,
                     relatedRecordId,
@@ -86,11 +90,11 @@ export default class Aa_voiceCallDetails extends LightningElement {
                 this.previousRelatedRecordId = null;
 
         }
-        // Send Customer Context
+
         if ( callDisposition === 'in-progress' && relatedRecordId && this.previousRelatedRecordId !== relatedRecordId && this.isInteractionSent) 
         {
             const payload = this.createPayload(
-                AgentAssistLabels.SET_CUSTOMER_CONTEXT_WIRE,
+                AgentAssistLabels.SET_CUSTOMER_CONTEXT,
                 interactionId,
                 createdById,
                 relatedRecordId,
@@ -105,11 +109,10 @@ export default class Aa_voiceCallDetails extends LightningElement {
 
         }
 
-        // End Interaction
         if ( callDisposition === 'completed' && callOutcome && callReason && !this.isInteractionEnd )
         {   
             const payload = this.createPayload(
-                AgentAssistLabels.END_INTERACTION_WIRE,
+                AgentAssistLabels.END_INTERACTION,
                 interactionId,
                 createdById,
                 relatedRecordId,
@@ -137,7 +140,7 @@ export default class Aa_voiceCallDetails extends LightningElement {
         publish(this.messageContext, VOICE_CALL_CHANNEL, payload);
 
         console.log(
-            'Published Payload aa_voiceCallDetails => ',
+            'aa_voiceCallDetails | publishMessage | Published Payload => ',
             JSON.stringify(payload)
         );
     }
@@ -166,10 +169,10 @@ export default class Aa_voiceCallDetails extends LightningElement {
             }
         })
         .then((record) => {
-            console.log('VoiceCall updated', record);
+            console.log('aa_voiceCallDetails | updateVoiceCall | VoiceCall updated ', record);
         })
         .catch((error) => {
-            console.error('VoiceCall update failed', error);
+            console.error('aa_voiceCallDetails | updateVoiceCall | VoiceCall update failed ', error);
         });
     }
 }
