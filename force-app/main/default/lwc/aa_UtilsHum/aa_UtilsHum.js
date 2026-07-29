@@ -82,15 +82,18 @@ export default class AgentAssistWebsocket {
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                             }
                             console.log('aa_UtilsHum | setupWebSocketIoClient | on connect data', data);
-                            let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
-                                    'INFO',
+                            let splunkJsonString = JSON.stringify(
+                                AgentAssistSplunkLoggingUtils.splunk_outer_context(
                                     'aa_UtilsHum.js',
-                                    'websocket.on connect',
-                                    'Websocket Connected',
-                                    undefined,
-                                    undefined,
-                                    this.userId
-                                ));
+                                    localStorage.getItem('agentAssistGenesysInteractionId'),
+                                    this.userId,
+                                    'INFO',
+                                    AgentAssistSplunkLoggingUtils.splunk_inner_context(
+                                        localStorage.getItem('agentAssistVoiceCallId')
+                                    ),
+                                    'Websocket Connected'
+                                )
+                            );
                             LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
                             publish(messageContext, VOICE_CALL_CHANNEL, AgentAssistEvents.aa_lms_event(AgentAssistLabels.CONNECT_NOTIFICATION,"{messageText: 'aa_UtilsHum connected', source: 'setupWebSocketIoClient', level: 'info'}"));
                         });
@@ -131,15 +134,18 @@ export default class AgentAssistWebsocket {
                         this.websocket.on("disconnect", (data) => {
                             console.log('aa_UtilsHum | setupWebSocketIoClient | on disconnect :', data);
                             LWCLogger({messageText: 'disconnect data: '+JSON.stringify(data), source: 'setupWebSocketIoClient', level: 'warn'});
-                            let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
-                                    'INFO',
+                            let splunkJsonString = JSON.stringify(
+                                AgentAssistSplunkLoggingUtils.splunk_outer_context(
                                     'aa_UtilsHum.js',
-                                    'websocket.on disconnect',
-                                    'Websocket Disconnected',
-                                    undefined,
-                                    undefined,
-                                    this.userId
-                                ));
+                                    localStorage.getItem('agentAssistGenesysInteractionId'),
+                                    this.userId,
+                                    'INFO',
+                                    AgentAssistSplunkLoggingUtils.splunk_inner_context(
+                                        localStorage.getItem('agentAssistVoiceCallId')
+                                    ),
+                                    'Websocket Disconnected'
+                                )
+                            );
                             LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
                             let message = AgentAssistEvents.aa_lms_event(AgentAssistLabels.CONNECTION_END, {messageText: 'agentAssistUtils disconnected', source: 'createWebSocketIoClient', level: 'info'});
                             publish(messageContext, VOICE_CALL_CHANNEL,  message);
@@ -223,15 +229,18 @@ export default class AgentAssistWebsocket {
                                 else{
                                     publish(messageContext, VOICE_CALL_CHANNEL, message);
                                 }
-                            let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
-                                    'INFO',
+                            let splunkJsonString = JSON.stringify(
+                                AgentAssistSplunkLoggingUtils.splunk_outer_context(
                                     'aa_UtilsHum.js',
-                                    'websocket.on connect_error',
-                                    'WebSocket Connection Error',
-                                    undefined,
-                                    undefined,
-                                    this.userId
-                                ));
+                                    localStorage.getItem('agentAssistGenesysInteractionId'),
+                                    this.userId,
+                                    'INFO',
+                                    AgentAssistSplunkLoggingUtils.splunk_inner_context(
+                                        localStorage.getItem('agentAssistVoiceCallId')
+                                    ),
+                                    'WebSocket Connection Error'
+                                )
+                            );
                             LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
                         });
 
