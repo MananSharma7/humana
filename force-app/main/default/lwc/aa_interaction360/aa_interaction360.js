@@ -10,8 +10,6 @@ import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLoggi
 
 export default class Aa_interaction360 extends LightningElement {
 	@api recordId;
-	pollingInterval = null;
-	genesysInteractionId;
 	isExpanded = false;
 	showInteraction = hasIntercation;
 	agentAssistLMSSubscription = null;
@@ -23,8 +21,6 @@ export default class Aa_interaction360 extends LightningElement {
 	
 	@wire(MessageContext)
 	messageContext;
-
-	messageTimeout;
 	connectedCallback() {
 		this.subscribeToAgentAssistMessageChannel();
 		this.handleStateLoad();	
@@ -33,13 +29,6 @@ export default class Aa_interaction360 extends LightningElement {
 
 	handleStateLoad() {
 		try {
-			// Check if page was reloaded (hard refresh)
-			const navEntries = performance.getEntriesByType('navigation');
-			const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
-			console.log('Interaction360 handleStateLoad: isReload = ' + isReload);
-
-			// REMOVED CLEAR ON RELOAD
-
 			const cachedHistories = localStorage.getItem('aa_interaction_history_cache');
 			const cachedInteractionId = localStorage.getItem('aa_interaction_customer_id');
 
@@ -156,9 +145,6 @@ export default class Aa_interaction360 extends LightningElement {
 					break;
 				case AgentAssistLabels.END_INTERACTION:
 					this.clearInteraction(message);
-					break;
-				case 'live_summary':
-					//this.prepareLiveSummaryLayout(message.data);
 					break;
 				default:
 					break;
@@ -397,7 +383,7 @@ export default class Aa_interaction360 extends LightningElement {
 		return this.isI360Enabled && this.showInteraction;
 	}
 
-	handleCopyInteraction360(event) {		
+	handleCopyInteraction360() {		
 		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
 							'aa_interaction360.js',
 							localStorage.getItem('agentAssistGenesysInteractionId'),

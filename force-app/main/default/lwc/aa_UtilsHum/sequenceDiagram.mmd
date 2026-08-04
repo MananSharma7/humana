@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor Agent
+    participant UtilityBar as Utility Bar / Parent LWC
+    participant Storage as Session Storage
+    participant GCP as GCP Backend / WebSocket
+
+    Agent->>UtilityBar: Click Agent Assist (Manual Open)
+    Note over UtilityBar: Check: User has PS & No Active Voice Call
+    UtilityBar->>UtilityBar: Generate local GUID (interaction_id)
+    UtilityBar->>GCP: Publish setInteractionContext (non-telephonic schema)
+    GCP-->>UtilityBar: set_interaction_context_notification (ACK with interaction_id & agent_assist_session_id)
+    UtilityBar->>Storage: Set isNonTelephonic = true & store session IDs
+    UtilityBar-->>Agent: Render AMA / Generic Experience
+
+    opt Customer Search & Selection
+        Agent->>UtilityBar: Select Account or Lead on Customer Search Page
+        UtilityBar->>GCP: Send setCustomerContext (with interaction_id)
+        UtilityBar-->>Agent: Update AA context for selected customer
+    end
+
+    opt Incoming / Outgoing Voice Call
+        GCP-->>UtilityBar: Voice Call Initiated
+        UtilityBar->>GCP: Send endInteraction (close non-telephonic session)
+        UtilityBar->>Storage: Clear non-telephonic session storage
+        UtilityBar->>GCP: Send setInteractionContext (Voice Call Schema)
+        UtilityBar->>Storage: Set isNonTelephonic = false
+    end
+
+    opt User Closes Utility Panel
+        Agent->>UtilityBar: Close AA Window
+        UtilityBar->>GCP: Send endInteraction (with interaction_id)
+        UtilityBar->>Storage: Clear all Session Storage & clear cards
+    end
