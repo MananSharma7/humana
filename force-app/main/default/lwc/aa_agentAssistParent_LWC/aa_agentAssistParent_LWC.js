@@ -264,18 +264,18 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				case AgentAssistLabels.SET_INTERACTION_CONTEXT:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | set_interaction_context');
 					this.sendInteractionContext(message);
-					let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_logging_context(
-						'INFO',
-						'aa_agentAssistParent_LWC.js',
-						'handleAgentAssistMessage(SET_INTERACTION_CONTEXT)',
-						'Interaction Context Set',
-						undefined,
-						AgentAssistSplunkLoggingUtils.splunk_interaction_callid_message(
+					let splunkJsonString = JSON.stringify(
+						AgentAssistSplunkLoggingUtils.splunk_outer_context(
+							'aa_agentAssistParent_LWC.js',
 							localStorage.getItem('agentAssistGenesysInteractionId'),
-							localStorage.getItem('agentAssistVoiceCallId')
-						),
-						USER_RECORD_ID
-					));
+							USER_RECORD_ID,
+							'INFO',
+							AgentAssistSplunkLoggingUtils.splunk_inner_context(
+								localStorage.getItem('agentAssistVoiceCallId')
+							),
+							'Interaction Context Set'
+						)
+					);
 					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: "AgentAssistUsageEvent"});
 					this.handlePopOutLogCall();
 					break;

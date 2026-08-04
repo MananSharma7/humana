@@ -337,17 +337,15 @@ export default class Aa_liveTranscript extends LightningElement {
 
 	handleCopyTranscription(event) {
 		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_logging_context(
-				'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_outer_context(
 				'aa_liveTranscript.js',
-				'handleCopyTranscription',
-				'AA Copy',
 				localStorage.getItem('agentAssistGenesysInteractionId'),
-				AgentAssistSplunkLoggingUtils.splunk_agentAssistCopied_message(
-					localStorage.getItem('agentAssistVoiceCallId'),
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId
-				)
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(
+					localStorage.getItem('agentAssistVoiceCallId')
+				),
+				'AA Copy'
 			)
 		);
 
