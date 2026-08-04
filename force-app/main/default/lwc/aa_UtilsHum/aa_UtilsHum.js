@@ -634,13 +634,14 @@ export const AgentAssistEvents = {
         }
     }),
 
-    set_interaction_context: (interaction_id, token, user_network_id, user_email, salesforce_user_id) => ({
+    set_interaction_context: (interaction_id, token, user_network_id, user_email, salesforce_user_id,interaction_id_type) => ({
         version: "0.1",
         event_type: "set_interaction_context",
         data: {
             card_metadata: {
             interaction_id: interaction_id,
-            interaction_id_type: "voice",
+            //interaction_id_type: "voice",
+            interaction_id_type: interaction_id_type,
             aa_client_application: "CRM MP360",
             token: token,
             user_network_id: user_network_id,
