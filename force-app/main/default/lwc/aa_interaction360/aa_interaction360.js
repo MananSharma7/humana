@@ -19,6 +19,8 @@ export default class Aa_interaction360 extends LightningElement {
 	customerInteractionId;
 	isI360Enabled = false;
 	
+	i360Logged = false;
+
 	@wire(MessageContext)
 	messageContext;
 	connectedCallback() {
@@ -126,19 +128,7 @@ export default class Aa_interaction360 extends LightningElement {
 					break;
 				case AgentAssistLabels.HISTORICAL_INTERACTION_SUMMARY:
 					this.prepareIntHistoryDataLayout(message);
-					if (this.callHistories.length == 0) {
-						let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_interaction360.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'Interaction360NoDataToDisplay'
-						));
-						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-					}
+					this.i360Logged = true;
 					break;
 				case AgentAssistLabels.ERROR:
 					this.showError('We are unable to retrieve Interaction360');
@@ -287,6 +277,20 @@ export default class Aa_interaction360 extends LightningElement {
 		console.log('Interaction360 clearInteraction: CLEARING DATA NOW.');
 		this.callHistories = [];
 		this.customerInteractionId = null; 
+
+		if (!this.i360Logged) {
+			let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+				'aa_interaction360.js',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				userId,
+				'INFO',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(
+					localStorage.getItem('agentAssistVoiceCallId')
+				),
+				'Interaction360NoDataToDisplay'
+			));
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		}
 
 		localStorage.removeItem('aa_interaction_history_cache');
 		localStorage.removeItem('aa_interaction_customer_id');

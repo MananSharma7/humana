@@ -96,7 +96,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				// Filter based on permissions
 				this.cards = this.cards.filter((card) => {
 					if (card.card_AMA && !this.amaPermission) return false;
-					if (!card.card_AMA && !this.knowledgeCardPermission) return false;
+					if (card.card.isSummary && !this.isPostCallSummaryPermission) return false;
+					if (!card.card_AMA && !card.isSummary && !this.knowledgeCardPermission) return false;
 					return true;
 				});
 				console.log('handleStateLoad: Restored ' + this.cards.length + ' cards.');
@@ -291,7 +292,7 @@ export default class Aa_knowledgeMessage extends LightningElement {
 							)
 						);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
-						this.loggedCards.add(cardMetadata?.card_id);
+							this.loggedCards.add(cardMetadata?.card_id);
 					}
 					break;
 				case 'abandoned':

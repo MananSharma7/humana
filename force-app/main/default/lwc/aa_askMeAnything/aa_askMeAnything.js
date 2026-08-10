@@ -2,7 +2,7 @@ import { LightningElement, api, wire, track } from 'lwc';
 import { publish, MessageContext } from 'lightning/messageService';
 import AGENTASSISTLMS from '@salesforce/messageChannel/LWCToUiConnectorMessengerMs__c';
 import { AgentAssistLabels, AgentAssistEvents } from 'c/aa_UtilsHum';
-import LWCLogger from '@salesforce/apex/AA_LoggerLWC.LogFromLWC';
+import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
 
 export default class Aa_askMeAnything extends LightningElement {
 	message = '';
