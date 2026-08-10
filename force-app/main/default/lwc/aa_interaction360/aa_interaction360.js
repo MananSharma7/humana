@@ -298,7 +298,9 @@ export default class Aa_interaction360 extends LightningElement {
 	showError(message) {
 		this.errorMessage = message;
 		this.isExpanded = true;
-		LWCLogger({ messageText: this.errorMessage, source: 'Interaction360 LWC comp', level: 'error' });
+		if (this.errorMessage) {
+			LWCLogger({ messageText: this.errorMessage, source: 'Interaction360 LWC comp', level: 'error' });
+		}
 	}
 	handleInitialization() {
 		this.errorMessage = '';

@@ -261,70 +261,70 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				case 'completed':
 					isCompleted = true;
 					isFooter = true;
-					LWCLogger({
-						messageText:
-							'Ask Me Anything Card Completed; Interaction ID: ' +
-							localStorage.getItem('agentAssistGenesysInteractionId') +
-							'; Agent Assist Session ID: ' +
-							localStorage.getItem('agentAssistVoiceCallId') +
-							'; Card Title: ' +
-							content?.header +
-							'; Card ID: ' +
-							cardMetadata?.card_id,
-						source: 'prepareAskMeAnything | AMA',
-						level: 'info'
-					});
 					if (!this.loggedCards.has(cardMetadata?.card_id)) {
-					let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_knowledgeMessage.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId'),
-								undefined,
-								undefined,
-								cardMetadata?.card_id
-							),
-							'AskMeAnythingCardCompleted'
-						)
-					);
-					LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+						LWCLogger({
+							messageText:
+								'Ask Me Anything Card Completed; Interaction ID: ' +
+								localStorage.getItem('agentAssistGenesysInteractionId') +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId') +
+								'; Card Title: ' +
+								content?.header +
+								'; Card ID: ' +
+								cardMetadata?.card_id,
+							source: 'prepareAskMeAnything | AMA',
+							level: 'info'
+						});
+						let splunkJsonString = JSON.stringify(
+							AgentAssistSplunkLoggingUtils.splunk_outer_context(
+								'aa_knowledgeMessage.js',
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								userId,
+								'INFO',
+								AgentAssistSplunkLoggingUtils.splunk_inner_context(
+									localStorage.getItem('agentAssistVoiceCallId'),
+									undefined,
+									undefined,
+									cardMetadata?.card_id
+								),
+								'AskMeAnythingCardCompleted'
+							)
+						);
+						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 						this.loggedCards.add(cardMetadata?.card_id);
 					}
 					break;
 				case 'abandoned':
 					isAbandoned = true;
-					LWCLogger({
-						messageText:
-							'Ask Me Anything Card Abandoned; Interaction ID: ' +
-							localStorage.getItem('agentAssistGenesysInteractionId') +
-							'; Agent Assist Session ID: ' +
-							localStorage.getItem('agentAssistVoiceCallId') +
-							'; Card Title: ' +
-							content?.header +
-							'; Card ID: ' +
-							cardMetadata?.card_id,
-						source: 'prepareAskMeAnything | AMA',
-						level: 'info'
-					});
 					if (!this.loggedCards.has(cardMetadata?.card_id)) {
+						LWCLogger({
+							messageText:
+								'Ask Me Anything Card Abandoned; Interaction ID: ' +
+								localStorage.getItem('agentAssistGenesysInteractionId') +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId') +
+								'; Card Title: ' +
+								content?.header +
+								'; Card ID: ' +
+								cardMetadata?.card_id,
+							source: 'prepareAskMeAnything | AMA',
+							level: 'info'
+						});
 						let splunkJsonString = JSON.stringify(
-						AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_knowledgeMessage.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'WARN',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId'),
-								undefined,
-								undefined,
-								cardMetadata?.card_id
-							),
-							'AskMeAnythingCardAbandoned'
-						)
-					);
+							AgentAssistSplunkLoggingUtils.splunk_outer_context(
+								'aa_knowledgeMessage.js',
+								localStorage.getItem('agentAssistGenesysInteractionId'),
+								userId,
+								'WARN',
+								AgentAssistSplunkLoggingUtils.splunk_inner_context(
+									localStorage.getItem('agentAssistVoiceCallId'),
+									undefined,
+									undefined,
+									cardMetadata?.card_id
+								),
+								'AskMeAnythingCardAbandoned'
+							)
+						);
 						LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 						this.loggedCards.add(cardMetadata?.card_id);
 					}
@@ -508,36 +508,40 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				case 'completed':
 					isCompleted = true;
 					isFooter = true;
-					LWCLogger({
-						messageText:
-							'Knowledge Card Completed; Interaction ID: ' +
-							localStorage.getItem('agentAssistGenesysInteractionId') +
-							'; Agent Assist Session ID: ' +
-							localStorage.getItem('agentAssistVoiceCallId') +
-							'; Card Title: ' +
-							content?.header +
-							'; Card ID: ' +
-							cardMetadata?.card_id,
-						source: 'prepareKnowledgeCard | Knowledge Cards',
-						level: 'info'
-					});
+					if (!this.loggedCards.has(cardMetadata?.card_id)) {
+						LWCLogger({
+							messageText:
+								'Knowledge Card Completed; Interaction ID: ' +
+								localStorage.getItem('agentAssistGenesysInteractionId') +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId') +
+								'; Card Title: ' +
+								content?.header +
+								'; Card ID: ' +
+								cardMetadata?.card_id,
+							source: 'prepareKnowledgeCard | Knowledge Cards',
+							level: 'info'
+						});
+					}
 					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'completed');
 					break;
 				case 'abandoned':
 					isAbandoned = true;
-					LWCLogger({
-						messageText:
-							'Knowledge Card Abandoned; Interaction ID: ' +
-							localStorage.getItem('agentAssistGenesysInteractionId') +
-							'; Agent Assist Session ID: ' +
-							localStorage.getItem('agentAssistVoiceCallId') +
-							'; Card Title: ' +
-							content?.header +
-							'; Card ID: ' +
-							cardMetadata?.card_id,
-						source: 'prepareKnowledgeCard | Knowledge Cards',
-						level: 'info'
-					});
+					if (!this.loggedCards.has(cardMetadata?.card_id)) {
+						LWCLogger({
+							messageText:
+								'Knowledge Card Abandoned; Interaction ID: ' +
+								localStorage.getItem('agentAssistGenesysInteractionId') +
+								'; Agent Assist Session ID: ' +
+								localStorage.getItem('agentAssistVoiceCallId') +
+								'; Card Title: ' +
+								content?.header +
+								'; Card ID: ' +
+								cardMetadata?.card_id,
+							source: 'prepareKnowledgeCard | Knowledge Cards',
+							level: 'info'
+						});
+					}
 					this.logKnowledgeCardToSplunk(cardMetadata?.card_id, 'abandoned');
 					break;
 				default:

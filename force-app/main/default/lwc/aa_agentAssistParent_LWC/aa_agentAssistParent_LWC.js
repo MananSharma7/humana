@@ -715,11 +715,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.handleOpenAAUtility();
 				}
 			}
-			LWCLogger({
-				messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
-				source: 'sendInteractionContext | Send Interaction Context',
-				level: 'info'
-			});
+			if (this.genesysInteractionId) {
+				LWCLogger({
+					messageText: 'Interaction Context set; Interaction ID: ' + this.genesysInteractionId,
+					source: 'sendInteractionContext | Send Interaction Context',
+					level: 'info'
+				});
+			}
 			
 		} catch (e) {
 			console.log('agentAssistUtilityPanel | sendInteractionContext | error: ' + e);
@@ -752,26 +754,30 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 								true
 							)
 						);
-						LWCLogger({
-							messageText:
-								'Customer context sent; Interaction ID: ' +
-								this.genesysInteractionId +
-								'; Agent Assist Session ID: ' +
-								localStorage.getItem('agentAssistVoiceCallId'),
-							source: 'sendCustomerContext | Send Customer Context',
-							level: 'info'
-						});
-					} else {
-						LWCLogger({
-							messageText:
-								'Customer context not set, Customer ID or SDR Member ID was null; Interaction ID: ' +
-								this.genesysInteractionId +
-								'; Agent Assist Session ID: ' +
-								localStorage.getItem('agentAssistVoiceCallId'),
-							source: 'sendCustomerContext | Send Customer Context',
-							level: 'error'
-						});
+						if (this.genesysInteractionId) {
+							LWCLogger({
+								messageText:
+									'Customer context sent; Interaction ID: ' +
+									this.genesysInteractionId +
+									'; Agent Assist Session ID: ' +
+									localStorage.getItem('agentAssistVoiceCallId'),
+								source: 'sendCustomerContext | Send Customer Context',
+								level: 'info'
+							});
 						}
+					} else {
+						if (this.genesysInteractionId) {
+							LWCLogger({
+								messageText:
+									'Customer context not set, Customer ID or SDR Member ID was null; Interaction ID: ' +
+									this.genesysInteractionId +
+									'; Agent Assist Session ID: ' +
+									localStorage.getItem('agentAssistVoiceCallId'),
+								source: 'sendCustomerContext | Send Customer Context',
+								level: 'info'
+							});
+						}
+					}
 					console.log(
 						'setCustomerContextData:' +
 							this.memberType +
@@ -964,7 +970,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
     displayAuthError() {
         let objError = arguments[0];
-		LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
+		if (objError) {
+			LWCLogger({ messageText: 'AuthError occurred; Salesforce User Id: ' + this.userSalesforceId + 'User Network Id: ' + this.userNetworkId + '; \n' + JSON.stringify(objError), source: 'aa_agentAssistParentLWC', level: "error"});
+		}
     }
 
     async initializeWebsocketAfterTokenRetrieval() {
@@ -1089,17 +1097,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				enterprise_person_id
 			)
 		);
-		LWCLogger({
-			messageText:
-				'AMA Request sent; Interaction ID: ' +
-				this.genesysInteractionId +
-				'; Agent Assist Session ID: ' +
-				localStorage.getItem('agentAssistVoiceCallId') +
-				'; AMA Question: ' +
-				data?.data?.content?.query?.text,
-			source: 'sendAMAQuery | Ask Me Anything',
-			level: 'info'
-		});
+		if (data?.data?.content?.query?.text) {
+			LWCLogger({
+				messageText:
+					'AMA Request sent; Interaction ID: ' +
+					this.genesysInteractionId +
+					'; Agent Assist Session ID: ' +
+					localStorage.getItem('agentAssistVoiceCallId') +
+					'; AMA Question: ' +
+					data?.data?.content?.query?.text,
+				source: 'sendAMAQuery | Ask Me Anything',
+				level: 'info'
+			});
+		}
 
 		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
 			'aa_agentAssistParent_LWC.js',
@@ -1577,11 +1587,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				);
 				console.log('set_interaction_context published');
 			}
-			LWCLogger({
-				messageText: 'Non Telephonic Interaction Context set; User ID: ' + this.userSalesforceId,
-				source: 'aa_agentAssistParent_LWC | sendInteractionContextNonTelephonic',
-				level: 'info'
-			});
+			if (this.userSalesforceId) {
+				LWCLogger({
+					messageText: 'Non Telephonic Interaction Context set; User ID: ' + this.userSalesforceId,
+					source: 'aa_agentAssistParent_LWC | sendInteractionContextNonTelephonic',
+					level: 'info'
+				});
+			}
 			
 		} catch (e) {
 			console.log('aa_agentAssistParent_LWC | sendInteractionContextNonTelephonic | error: ' + e);

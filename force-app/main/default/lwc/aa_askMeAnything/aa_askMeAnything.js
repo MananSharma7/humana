@@ -86,7 +86,9 @@ export default class Aa_askMeAnything extends LightningElement {
 			let uuid = this.generateUUID();
 			let data = AgentAssistEvents.ask_me_anything_query(text, uuid, reply, replycardids);
 
-			LWCLogger({ messageText: "AMA Card surfaced; Interaction ID: " + data?.data?.card_metadata?.interaction_id + "; Agent Assist Session ID: " + localStorage.getItem('agentAssistVoiceCallId') + "; AMA Card Title: " + data?.data?.content?.query?.text + "; AMA Query ID: " + data?.data?.card_metadata?.query_id, source: "AA | askQuery", level: "info" });
+			if (text) {
+				LWCLogger({ messageText: "AMA Card surfaced; Interaction ID: " + data?.data?.card_metadata?.interaction_id + "; Agent Assist Session ID: " + localStorage.getItem('agentAssistVoiceCallId') + "; AMA Card Title: " + data?.data?.content?.query?.text + "; AMA Query ID: " + data?.data?.card_metadata?.query_id, source: "AA | askQuery", level: "info" });
+			}
 
 			console.log('Data => ' + JSON.stringify(data, null, 2));
 
