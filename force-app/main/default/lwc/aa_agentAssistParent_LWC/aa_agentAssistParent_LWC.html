@@ -74,6 +74,12 @@
 					</div>
 					<!-- Main Panels -->
 					<div class="main-panels">
+						<!-- Snapshot Card  -->
+						<template if:true={snapshotData}>
+							<c-aa_customer-snapshot
+								snapshot-data={snapshotData}>
+							</c-aa_customer-snapshot>
+						</template>
 						<c-aa_knowledge-agent-assist record-id={recordId}></c-aa_knowledge-agent-assist>
 						<c-aa_interaction360 record-id={recordId} onexpand={handleExpand}></c-aa_interaction360>
 					</div>

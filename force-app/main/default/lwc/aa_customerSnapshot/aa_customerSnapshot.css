@@ -1,0 +1,93 @@
+.snapshot-card {
+    border: 1px solid #d8dde6;
+    border-radius: 8px;
+    background: #ffffff;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.snapshot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: #f8f8f8;
+    cursor: pointer;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.customer-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5f5f5f;
+}
+
+.caller-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2952cc;
+    margin-left: 20px;
+}
+
+.snapshot-row {
+    padding: 10px 16px 0 16px;
+    font-size: 14px;
+}
+
+.dob-row {
+    padding-top: 4px;
+}
+
+.field-value {
+    margin-left: 4px;
+}
+
+.preferred-name-value {
+    font-weight: 700;
+    color: #1c1c1c;
+}
+
+.dob-value {
+    font-weight: 700;
+    color: #1c1c1c;
+}
+
+.badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 16px 12px 16px;
+}
+
+.badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1c1c1c;
+}
+
+.badge-icon {
+    --slds-c-icon-color-foreground-default: #1c1c1c;
+}
+
+.birthday {
+    background: #f8f4ff;
+    border-color: #e6ddff;
+    color: #7f56d9;
+}
+
+.birthday .badge-icon {
+    --slds-c-icon-color-foreground-default: #7f56d9;
+}

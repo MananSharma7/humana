@@ -1,0 +1,119 @@
+<template>
+    <template if:true={snapshotData}>
+        <div class="snapshot-card">
+
+            <div class="snapshot-header" onclick={toggleSnapshot}>
+
+                <div class="header-left">
+
+                    <lightning-icon
+                        icon-name="utility:user"
+                        size="x-small">
+                    </lightning-icon>
+
+                    <span class="customer-label">
+                        Customer
+                    </span>
+
+                    <span class="caller-name">
+                        {snapshotData.callerName}
+                    </span>
+
+                </div>
+
+                <lightning-icon
+                    icon-name={accordionIcon}
+                    size="x-small">
+                </lightning-icon>
+
+            </div>
+
+            <template if:true={isExpanded}>
+
+                <div class="snapshot-row">
+                    <strong>Preferred Name:</strong>
+                    <span class="field-value preferred-name-value">
+                        {snapshotData.preferredName}
+                    </span>
+                </div>
+
+                <div class="snapshot-row dob-row">
+                    <strong>Date of Birth:</strong>
+                    <span class="field-value dob-value">
+                        {formattedDob}
+                    </span>
+                </div>
+
+                <div class="badge-row">
+
+                    <template if:true={isMember}>
+                        <div class="badge">
+                            <lightning-icon
+                                icon-name="utility:user"
+                                size="xx-small"
+                                class="badge-icon">
+                            </lightning-icon>
+
+                            <span>Member</span>
+                        </div>
+                    </template>
+
+                    <template if:true={isLead}>
+                        <div class="badge">
+                            <lightning-icon
+                                icon-name="utility:user"
+                                size="xx-small"
+                                class="badge-icon">
+                            </lightning-icon>
+
+                            <span>Lead</span>
+                        </div>
+                    </template>
+
+                    <template if:true={showVeteranBadge}>
+                        <div class="badge">
+                            <lightning-icon
+                                icon-name="utility:favorite"
+                                size="xx-small"
+                                class="badge-icon">
+                            </lightning-icon>
+
+                            <span>Veteran</span>
+                        </div>
+                    </template>
+
+                    <template if:true={showApplicationStatusBadge}>
+                        <div class="badge">
+                            <lightning-icon
+                                icon-name="utility:info"
+                                size="xx-small"
+                                class="badge-icon">
+                            </lightning-icon>
+
+                            <span>
+                                Lead Status - {snapshotData.applicationStatus}
+                            </span>
+                        </div>
+                    </template>
+
+                    <template if:true={showBirthdayBadge}>
+                        <div class="badge birthday">
+                            <lightning-icon
+                                icon-name="utility:event"
+                                size="xx-small"
+                                class="badge-icon">
+                            </lightning-icon>
+
+                            <span>
+                                Birthday in {birthdayDaysRemaining} days
+                            </span>
+                        </div>
+                    </template>
+
+                </div>
+
+            </template>
+
+        </div>
+    </template>
+</template>

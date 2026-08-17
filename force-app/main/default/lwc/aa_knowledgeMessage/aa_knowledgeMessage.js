@@ -800,7 +800,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				);
 				return;
 			}
-		} else {
+		} 
+		else {
 			console.log('clearCards: No message data provided to verify ID.');
 		}
 		console.log('clearCards: CLEARING DATA NOW.');

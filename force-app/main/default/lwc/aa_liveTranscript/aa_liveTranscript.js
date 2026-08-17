@@ -97,6 +97,7 @@ export default class Aa_liveTranscript extends LightningElement {
 		this.isLive = true;
 		this.hasError = false;
 		this.errorMessage = '';
+		localStorage.removeItem('live_transcript_splunk_logged');
 	}
 
 	processChunk(chunk) {
@@ -119,16 +120,16 @@ export default class Aa_liveTranscript extends LightningElement {
 			this.errorMessage =
 				chunk.error.user_message || chunk.error.message || 'An error occurred during live transcription.';
 
-			let splunkJsonString = JSON.stringify(
-				AgentAssistSplunkLoggingUtils.splunk_outer_context(
-					'aa_liveTranscript.js',
-					localStorage.getItem('agentAssistGenesysInteractionId'),
-					userId,
-					'ERROR',
-					AgentAssistSplunkLoggingUtils.splunk_inner_context(localStorage.getItem('agentAssistVoiceCallId')),
-					'LiveTranscriptError'
-				)
-			);
+			let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+				'aa_liveTranscript.js',
+				localStorage.getItem('agentAssistGenesysInteractionId'),
+				userId,
+				'ERROR',
+				AgentAssistSplunkLoggingUtils.splunk_inner_context(
+					localStorage.getItem('agentAssistVoiceCallId')
+				),
+				'LiveTranscriptError'
+			));
 			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 			return;
 		}
@@ -182,17 +183,21 @@ export default class Aa_liveTranscript extends LightningElement {
 
 		this.transcriptMessages.push(newMsg);
 
-		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_liveTranscript.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				userId,
-				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(localStorage.getItem('agentAssistVoiceCallId')),
-				'LiveTranscriptChunkPublished'
-			)
-		);
-		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+			'aa_liveTranscript.js',
+			localStorage.getItem('agentAssistGenesysInteractionId'),
+			userId,
+			'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_inner_context(
+				localStorage.getItem('agentAssistVoiceCallId')
+			),
+			'LiveTranscriptAvailable'
+		));
+
+		if (localStorage.getItem('live_transcript_splunk_logged') !== 'true'){
+			LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+			localStorage.setItem('live_transcript_splunk_logged', 'true');
+		}
 
 		if (this.searchTerm && this.searchTerm.trim().length > 0) {
 			this._applyHighlights(this.searchTerm.trim());
@@ -336,18 +341,17 @@ export default class Aa_liveTranscript extends LightningElement {
 	}
 
 	handleCopyTranscription(event) {
-		let splunkJsonString = JSON.stringify(
-			AgentAssistSplunkLoggingUtils.splunk_outer_context(
-				'aa_liveTranscript.js',
-				localStorage.getItem('agentAssistGenesysInteractionId'),
-				userId,
-				'INFO',
-				AgentAssistSplunkLoggingUtils.splunk_inner_context(
-					localStorage.getItem('agentAssistVoiceCallId')
-				),
-				'AA Copy'
-			)
-		);
+		
+		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
+			'aa_liveTranscript.js',
+			localStorage.getItem('agentAssistGenesysInteractionId'),
+			userId,
+			'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_inner_context(
+				localStorage.getItem('agentAssistVoiceCallId')
+			),
+			'AA_Copy'
+		));
 
 		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
 	}
