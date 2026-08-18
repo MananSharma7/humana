@@ -90,6 +90,16 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	@track snapshotData;
 
+	get isCustomerContextActive() {
+		return !!this.snapshotData || !!this.memberID;
+	}
+
+	handleEndSession() {
+		this.websocket.emitEvent(
+			AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT,
+			AgentAssistEvents.remove_customer_context(this.genesysInteractionId)
+		);
+	}
 	@api
 	get recordId() {
 		return this._recordId;
@@ -320,6 +330,23 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
 						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
 					}
+					break;
+				case AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT:
+					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | REMOVE_CUSTOMER_CONTEXT');
+					this.snapshotData = null;
+					this.memberID = null;
+					this.sdrPersonId = null;
+					this.custId = null;
+					this.memberType = null;
+					this.relatedRecordId = null;
+					this.interactingAboutMemberId = null;
+					
+					localStorage.removeItem('agentAssistRelatedRecordId');
+					localStorage.removeItem('agentAssistInteractingMemberId');
+
+					publish(this.messageContext, VOICE_CALL_CHANNEL, {
+						type: AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT
+					});
 					break;
 				case AgentAssistLabels.AGENT_FEEDBACK:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | agent_feedback');

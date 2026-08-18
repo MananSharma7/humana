@@ -511,7 +511,8 @@ export const AgentAssistLabels = {
     CONNECTION_END:'connection_end',
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
-    LIVE_TRANSCRIPTION: "live_transcription"
+    LIVE_TRANSCRIPTION: "live_transcription",
+    REMOVE_CUSTOMER_CONTEXT: 'remove_customer_context'
 }
 
 export const AgentAssistEvents = {
@@ -609,6 +610,17 @@ export const AgentAssistEvents = {
     end_interaction: (interaction_id) => ({
         version: "1.0",
         event_type: "end_interaction_event",
+        data: {
+            card_metadata: {
+                interaction_id: interaction_id,
+                interaction_id_type: "voice"
+            }
+        }
+    }),
+
+    remove_customer_context: (interaction_id) => ({
+        version: "0.1",
+        event_type: "remove_customer_context",
         data: {
             card_metadata: {
                 interaction_id: interaction_id,

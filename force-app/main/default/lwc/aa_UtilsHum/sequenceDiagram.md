@@ -1,3 +1,5 @@
+
+```mermaid
 sequenceDiagram
     autonumber
     actor Agent
@@ -32,3 +34,4 @@ sequenceDiagram
         UtilityBar->>GCP: Send endInteraction (with interaction_id)
         UtilityBar->>Storage: Clear all Session Storage & clear cards
     end
+```
