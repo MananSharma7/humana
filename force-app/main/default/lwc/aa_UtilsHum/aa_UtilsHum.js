@@ -439,6 +439,7 @@ export default class AgentAssistWebsocket {
                             else {
                                 console.log('aa_UtilsHum | emitEvent | eventType: ' + eventType + ', Received ack: ' + result + ' @ ', new Date().toISOString());
                                 console.log('aa_UtilsHum | emitEvent | eventType: ' + eventType + ', data: ' + data);
+                                localStorage.setItem('aa_eventEmitted',eventType + ', Received ack: ' + result + ' @ ', new Date().toString());
                                 if(eventType == AgentAssistLabels.SET_INTERACTION_CONTEXT && data && data != null && data != "") {
                                     console.log('aa_UtilsHum | emitEvent | Publishing update_interaction');
                                     console.log('aa_UtilsHum | emitEvent | ' + eventType + ' data:' + JSON.stringify(data));
@@ -511,8 +512,7 @@ export const AgentAssistLabels = {
     CONNECTION_END:'connection_end',
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
-    LIVE_TRANSCRIPTION: "live_transcription",
-    REMOVE_CUSTOMER_CONTEXT: 'remove_customer_context'
+    LIVE_TRANSCRIPTION: "live_transcription"
 }
 
 export const AgentAssistEvents = {
@@ -544,13 +544,14 @@ export const AgentAssistEvents = {
         }
     }),
 
-      ask_me_anything_query: (query_text, query_id, isReply, reply_card_ids, interaction_id, enterprise_person_id) => ({
+      ask_me_anything_query: (query_text, query_id, isReply, reply_card_ids, interaction_id, enterprise_person_id, interaction_id_type) => ({
         version: "0.1",
         event_type: "ask_me_anything_query",
         data: {
             card_metadata: {
                 interaction_id: interaction_id,
-                interaction_id_type: "voice",
+                //interaction_id_type: "voice",
+                interaction_id_type: interaction_id_type,
                 customer_type: "member",
                 enterprise_person_id: enterprise_person_id,
                 member_id: enterprise_person_id,
@@ -607,24 +608,13 @@ export const AgentAssistEvents = {
         }
     }),
 
-    end_interaction: (interaction_id) => ({
+    end_interaction: (interaction_id,interaction_id_type) => ({
         version: "1.0",
         event_type: "end_interaction_event",
         data: {
             card_metadata: {
                 interaction_id: interaction_id,
-                interaction_id_type: "voice"
-            }
-        }
-    }),
-
-    remove_customer_context: (interaction_id) => ({
-        version: "0.1",
-        event_type: "remove_customer_context",
-        data: {
-            card_metadata: {
-                interaction_id: interaction_id,
-                interaction_id_type: "voice"
+                interaction_id_type: interaction_id_type
             }
         }
     }),
@@ -652,7 +642,7 @@ export const AgentAssistEvents = {
         data: {
             card_metadata: {
             interaction_id: interaction_id,
-            interaction_id_type: "voice",
+            interaction_id_type: interaction_id_type,
             aa_client_application: "CRM MP360",
             token: token,
             user_network_id: user_network_id,

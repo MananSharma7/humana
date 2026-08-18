@@ -15,7 +15,7 @@ import VOICE_CALL_CHANNEL from '@salesforce/messageChannel/LWCToUiConnectorMesse
 import getRelatedRecord from '@salesforce/apex/AA_FetchRelatedRecordDetails.getRecordDetails';
 import runVoiceCallSessionFlow from '@salesforce/apex/AA_VoiceCallFlowInvoker.runVoiceCallSessionFlow';
 import LWCLogger from '@salesforce/apex/LoggerLWC.LogFromLWC';
-import { EnclosingUtilityId, updateUtility, open, getInfo } from 'lightning/platformUtilityBarApi';
+import { EnclosingUtilityId, updateUtility, open, getInfo ,onUtilityClick} from 'lightning/platformUtilityBarApi';
 import hasSSOTokenPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_SSO';
 import { AgentAssist_Labels, AuthErrorClass } from './layoutConfig';
 import getSSOAccessToken from '@salesforce/apex/AA_AzureOAuthGraphCallout.getSSOAccessToken';
@@ -25,6 +25,9 @@ import isFeatureEnabled from '@salesforce/apex/AA_Utility.isFeatureEnabled';
 import LWCSplunkLogger from '@salesforce/apex/AA_LWCSplunkLogging.LWCSplunkLogging';
 import hasLiveTranscriptPermission from '@salesforce/customPermission/MarketPoint_Agent_Assist_Live_Transcription';
 import userId from '@salesforce/user/Id';
+import hasNoVoiceCall from '@salesforce/apex/AA_Utility.hasNoVoiceCall';
+
+let isSessionRequestPending = false;
 
 export default class Aa_agentAssistParent_LWC extends LightningElement {
 	agentAssistLMSSubscription = null;
@@ -36,6 +39,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	isCustContextError = false;
 	custContErrorMessage = null;
 	isLiveTranscriptEnabled = false;
+	isMemberSnapshotEnabled = false;
 
 	@wire(MessageContext) messageContext;
 
@@ -90,16 +94,13 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	@track snapshotData;
 
-	get isCustomerContextActive() {
-		return !!this.snapshotData || !!this.memberID;
-	}
+	//nontelephonic
+	isNonTelephonic;
+	interactionIdType;
+	interactionId;
+	isEventPublished;
+	utilityClickUnsubscribe;
 
-	handleEndSession() {
-		this.websocket.emitEvent(
-			AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT,
-			AgentAssistEvents.remove_customer_context(this.genesysInteractionId)
-		);
-	}
 	@api
 	get recordId() {
 		return this._recordId;
@@ -160,17 +161,21 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		}
 	}
 
-	@wire(isFeatureEnabled, { featureName: 'AA_Error_Framework' })
-	wired({ error, data }) {
+	showError(message) {
+		this.errorMessage = message;
+	}
+
+	@wire(isFeatureEnabled, { featureName: 'AA_Member_Snapshot_Card' })
+	wiredSnapshot({ error, data }) {
 		if (data) {
-			this.isErrorFrameworkEnabled = data;
+			this.isMemberSnapshotEnabled = data;
 		} else if (error) {
 			console.error(error);
 		}
 	}
 
-	showError(message) {
-		this.errorMessage = message;
+	get showMemberSnapshot(){
+		return this.isMemberSnapshotEnabled;
 	}
 
 	@track isPopoutMode = false;
@@ -185,9 +190,17 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	async connectedCallback() {
 		console.log('aa_agentAssistParent_LWC:connectedCallback before setupWebSocketIoClient');
+		this.utilityClickUnsubscribe = onUtilityClick(
+                this.utilityId,
+                this.handleUtilityClick
+            );
+
+
+		this.isErrorFrameworkEnabled = await isFeatureEnabled({ featureName: 'AA_Error_Framework' });
 		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
 		if(this.isPopoutMode){
 			this.popedOutSplunkLog();
+			localStorage.setItem('aa_poppedOut','true');
 		}
 		if (localStorage.getItem('agentAssistGenesysInteractionId')) {
 			this.startUtilityMonitor();
@@ -195,7 +208,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
 		document.addEventListener('visibilitychange', this.handleVisibilityChange);
 		this.handleWindowClose = this.handleWindowClose.bind(this);
-		window.addEventListener('beforeunload', this.handleWindowClose);
+		window.addEventListener('beforeunload', this.handleWindowClose);s
 
 		this.updateStatus('default');
 		if (!this.recordId) {
@@ -331,23 +344,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
 					}
 					break;
-				case AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT:
-					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | REMOVE_CUSTOMER_CONTEXT');
-					this.snapshotData = null;
-					this.memberID = null;
-					this.sdrPersonId = null;
-					this.custId = null;
-					this.memberType = null;
-					this.relatedRecordId = null;
-					this.interactingAboutMemberId = null;
-					
-					localStorage.removeItem('agentAssistRelatedRecordId');
-					localStorage.removeItem('agentAssistInteractingMemberId');
-
-					publish(this.messageContext, VOICE_CALL_CHANNEL, {
-						type: AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT
-					});
-					break;
 				case AgentAssistLabels.AGENT_FEEDBACK:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | agent_feedback');
 					this.sendKnowledgeCardFeedback(message.data);
@@ -389,7 +385,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					localStorage.removeItem('int_context_error_message');
 					localStorage.removeItem('cust_context_error');
 					localStorage.removeItem('cust_context_error_message');
-					this.endInteraction('a'+ message.VoiceCallData.Interaction_Id__c);
+					if(this.interactionIdType === 'non-telephonic'){
+						this.endInteraction(this.genesysInteractionId);
+					}else{
+						this.endInteraction('a'+ message.VoiceCallData.Interaction_Id__c);
+					}
 					break;
 				case AgentAssistLabels.CONNECTION_END:
 					this.updateStatus('disconnected');
@@ -473,6 +473,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				localStorage.removeItem('agentAssistGenesysInteractionId');
 				localStorage.removeItem('agentAssistInteractingMemberId');
 				localStorage.removeItem('agentAssistRelatedRecordId');
+				localStorage.removeItem('aa_interactionIdType');
+				localStorage.removeItem("aa_nonTelephonicEventPublished");
+				localStorage.removeItem("aa_sessionId");
 				console.log('aa_agentAssistParent_LWC | endInteraction |  Cleared all session storage keys.');
 			}
 		} catch (e) {
@@ -680,6 +683,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	async sendInteractionContext(interactionDetails) {
 
+		this.isNonTelephonic = await hasNoVoiceCall({ loggedinUserId : userId });
+		this.interactionIdType = this.isNonTelephonic ?  'non-telephonic' : 'voice';
+		localStorage.setItem('aa_interactionIdType',this.interactionIdType);
+
 		if(interactionDetails.VoiceCallData.RelatedRecordId !== null){
             return;
         }
@@ -727,7 +734,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 						'',
 						this.userNetworkId,
 						'',
-						this.userSalesforceId
+						this.userSalesforceId,
+						this.interactionIdType
 					)
 				);
 
@@ -749,7 +757,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.accessToken,
 					this.userNetworkId,
 					this.userEmail,
-					this.userSalesforceId
+					this.userSalesforceId,
+					this.interactionIdType
 					)
 				);
 
@@ -1151,7 +1160,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				isReply,
 				reply_card_ids,
 				interaction_id,
-				enterprise_person_id
+				enterprise_person_id,
+				this.interactionIdType
 			)
 		);
 		LWCLogger({
@@ -1313,6 +1323,52 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			console.error(
 				'aa_agentAssistParent_LWC | handleSetInteractionContextNotification | Error in handleSetInteractionContextNotification',
 				e
+			);
+		}try {
+			console.log('reached handleSetInteractionContextNotification');
+			let intContNotError = '';
+			if (message?.error?.error_status) {
+				localStorage.setItem('int_context_error', message?.error?.error_status || '');
+				localStorage.setItem('int_context_error_message', message?.error?.user_message || '');
+				this.isIntContextError = true;
+				intContNotError = message?.error?.user_message;
+				this.intContErrorMessage = intContNotError;
+				LWCLogger({
+					messageText:
+						'set_interaction_context_notification error message received; Interaction ID: ' +
+						this.genesysInteractionId +
+						' Payload: ' +
+						JSON.stringify(message),
+					source: ' aa_agentAssistParent_LWC | handleSetInteractionContextNotification ',
+					level: 'info'
+				});
+			} else {
+				//set variables for non-telephonic on receive of setInteractionContextNotification success event
+				if(localStorage.getItem('aa_interactionIdType') === 'non-telephonic'){
+					let agentAssistSessionId = message?.data?.agent_assist_session_id;							
+					localStorage.setItem('aa_sessionId',agentAssistSessionId);
+					//Using same variable name for non-telephonic to make sure existing code works everywhere with same variable name
+					this.genesysInteractionId = message?.data?.interaction_id;	
+					localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
+				}
+				localStorage.setItem('int_context_error', '');
+				localStorage.setItem('int_context_error_message', '');
+				this.isIntContextError = false;
+				this.intContErrorMessage = '';
+				LWCLogger({
+					messageText:
+						'set_interaction_context_notification success message received; Interaction ID: ' +
+						this.genesysInteractionId +
+						' Payload: ' +
+						JSON.stringify(message),
+					source: ' aa_agentAssistParent_LWC | handleSetInteractionContextNotification ',
+					level: 'info'
+				});
+			}
+		} catch (e) {
+			console.error(
+				'aa_agentAssistParent_LWC | handleSetInteractionContextNotification | Error in handleSetInteractionContextNotification',
+				e?.message
 			);
 		}
     }
@@ -1532,6 +1588,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			this.handleWindowClose
 		);
 
+		if (this.utilityClickUnsubscribe) {
+            //this.utilityClickUnsubscribe();
+            this.utilityClickUnsubscribe = null;
+        }
+
 	}
 	
 	stopUtilityMonitor() {
@@ -1580,10 +1641,126 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	}
 	handleWindowClose() {
-		if(this.isPopoutMode){
+	try{
+		if(this.isPopoutMode){		
+			if(localStorage.getItem("aa_interactionIdType") === 'non-telephonic'){
+				localStorage.setItem('aa_window_close_fired', 'true');
+				localStorage.setItem('aa_window_close_time', new Date().toString());
+				console.log('genesysInteractionId-->'+this.genesysInteractionId);
+				//this.endInteraction(this.genesysInteractionId);
+				const wasPoppedOut = localStorage.getItem('aa_poppedOut');
+				/*if (!wasPoppedOut){
+					this.endInteraction(localStorage.getItem('agentAssistGenesysInteractionId'));
+				}*/		
+				//publish event to clear cards
+				publish(this.messageContext, VOICE_CALL_CHANNEL, {
+					type: AgentAssistLabels.END_INTERACTION,
+					data: { interactionId : this.genesysInteractionId }
+				});
+				//emit event to end agent assist session
+				this.websocket.emitEvent(
+					AgentAssistLabels.END_INTERACTION,
+					AgentAssistEvents.end_interaction(this.genesysInteractionId,this.interactionIdType)
+				);
+			}
 			this.logAAMinimized('AA_WINDOW_CLOSE');
 		}
-		
+		}catch(e){
+			console.error('aa_agentAssistParent_LWC | handleWindowClose | Error happened in window close '+e?.message);
+		}	
+	}
+
+	
+    handleUtilityClick = async () => {
+        try {
+			const utilityInfo = await getInfo(this.utilityId);
+			const isVisible = utilityInfo?.utilityVisible;
+			console.log('aa_nonTelephonicEventPublished->'+localStorage.getItem('aa_nonTelephonicEventPublished'));
+            const hasEventPublished = localStorage.getItem('aa_nonTelephonicEventPublished') === 'true';
+			const hasSessionId = localStorage.getItem('aa_sessionId') !== null;
+			this.isNonTelephonic = await hasNoVoiceCall({ loggedinUserId : userId });
+			this.interactionIdType = this.isNonTelephonic ?  'non-telephonic' : 'voice';
+			localStorage.setItem('aa_interactionIdType',this.interactionIdType);
+			console.log('isVisible-->'+isVisible);
+			console.log('!hasSessionId->'+!hasSessionId);
+			console.log('isNonTelephonic->'+this.isNonTelephonic);
+			console.log('!hasEventPublished->'+!hasEventPublished);
+			const wasPoppedOut = localStorage.getItem('aa_poppedOut');
+
+			/*if(wasPoppedOut === 'true'){
+				localStorage.removeItem('aa_poppedOut');
+				return;
+			}else{
+				 if (hasAgentAssistPermission && isVisible && !hasEventPublished && !hasSessionId && this.isNonTelephonic) {
+					localStorage.setItem('aa_nonTelephonicEventPublished', 'true');
+					this.sendInteractionContextNonTelephonic();
+					console.log('Utility clicked ');
+            	}
+			}*/
+		//session is already active
+		if(hasEventPublished) return;
+		//Prevent rapid fire SF internal call at the same time
+		if(isSessionRequestPending) return;
+		//If SF is firing the event internally on utility dock-in,reject it
+		if(!isVisible) return;
+
+		isSessionRequestPending = true;
+				
+        if (hasAgentAssistPermission && !hasEventPublished &&  this.isNonTelephonic) {
+				this.sendInteractionContextNonTelephonic();
+				console.log('Utility clicked ');
+            }
+        } catch (error) {
+            console.error('Error handling utility click:', error?.message);
+        }
+    }
+
+	sendInteractionContextNonTelephonic(){
+		try {
+			console.log('sendInteractionContextNonTelephonic reached');
+			localStorage.setItem('aa_nonTelephonicEventPublished', 'true');
+			
+			if (hasSSOTokenPermission) {
+				this.websocket.emitEvent(
+					AgentAssistLabels.SET_INTERACTION_CONTEXT,
+					AgentAssistEvents.set_interaction_context(
+						'',
+						'',
+						this.userNetworkId,
+						'',
+						this.userSalesforceId,
+						this.interactionIdType
+					)
+				);
+				console.log('set_interaction_context non-telephonic published-->'+new Date().toString());
+			} else {
+			this.websocket.emitEvent(
+				AgentAssistLabels.SET_INTERACTION_CONTEXT,
+				AgentAssistEvents.set_interaction_context(
+					'',
+					this.accessToken,
+					this.userNetworkId,
+					this.userEmail,
+					this.userSalesforceId,
+					this.interactionIdType
+					)
+				);
+				console.log('set_interaction_context non-telephonic published-->'+new Date().toString());
+			}
+
+			if (this.userSalesforceId) {
+				LWCLogger({
+					messageText: 'Non Telephonic Interaction Context set; User ID: ' + this.userSalesforceId,
+					source: 'aa_agentAssistParent_LWC | sendInteractionContextNonTelephonic',
+					level: 'info'
+				});
+			}
+			
+		} catch (e) {
+			console.log('aa_agentAssistParent_LWC | sendInteractionContextNonTelephonic | error: ' + e?.message);
+			this.showError('Agent Assist has been disabled while we investigate an error: ' + e?.message);
+		}
+
 	}
 
 }

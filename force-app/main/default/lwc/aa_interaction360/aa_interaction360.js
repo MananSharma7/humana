@@ -134,7 +134,6 @@ export default class Aa_interaction360 extends LightningElement {
 					this.showError('We are unable to retrieve Interaction360');
 					break;
 				case AgentAssistLabels.END_INTERACTION:
-				case AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT:
 					this.clearInteraction(message);
 					break;
 				default:
@@ -266,7 +265,7 @@ export default class Aa_interaction360 extends LightningElement {
 				this.customerInteractionId
 		);
 		
-		if (this.customerInteractionId && message?.VoiceCallData && this.customerInteractionId !== message.VoiceCallData.Interaction_Id__c) {
+		if (this.customerInteractionId && this.customerInteractionId !== message.VoiceCallData.Interaction_Id__c) {
 			console.log(
 				'Interaction360 clearInteraction: Mismatch in Customer Interaction ID, SKIPPING CLEAR. ' +
 					this.customerInteractionId +

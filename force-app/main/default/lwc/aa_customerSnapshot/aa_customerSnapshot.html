@@ -1,43 +1,34 @@
 <template>
-    <div class="snapshot-card">
+    <template if:true={snapshotData}>
+        <div class="snapshot-card">
 
-        <div class="snapshot-header" onclick={toggleSnapshot}>
+            <div class="snapshot-header" onclick={toggleSnapshot}>
 
-            <div class="header-left">
+                <div class="header-left">
 
-                <lightning-icon
-                    icon-name="utility:user"
-                    size="x-small">
-                </lightning-icon>
+                    <lightning-icon
+                        icon-name="utility:user"
+                        size="x-small">
+                    </lightning-icon>
 
-                <span class="customer-label">
-                    Customer
-                </span>
+                    <span class="customer-label">
+                        Customer
+                    </span>
 
-                <span class="caller-name">
-                    {callerNameDisplay}
-                </span>
+                    <span class="caller-name">
+                        {snapshotData.callerName}
+                    </span>
 
-            </div>
+                </div>
 
-            <div class="header-right" style="display:flex; align-items:center; gap: 10px;">
-                <lightning-button 
-                    label="End Session" 
-                    variant="destructive" 
-                    onclick={handleEndSession}
-                    class="end-session-btn"
-                    icon-name="utility:power">
-                </lightning-button>
                 <lightning-icon
                     icon-name={accordionIcon}
                     size="x-small">
                 </lightning-icon>
+
             </div>
 
-        </div>
-
-        <template if:true={isExpanded}>
-            <template if:true={snapshotData}>
+            <template if:true={isExpanded}>
 
                 <div class="snapshot-row">
                     <strong>Preferred Name:</strong>
@@ -122,6 +113,7 @@
                 </div>
 
             </template>
-            </template>
+
         </div>
+    </template>
 </template>
