@@ -15,6 +15,15 @@ export default class AaCustomerSnapshot extends LightningElement {
             : 'utility:chevronright';
     }
 
+    get callerNameDisplay() {
+        return this.snapshotData && this.snapshotData.callerName ? this.snapshotData.callerName : 'None';
+    }
+
+    handleEndSession(event) {
+        event.stopPropagation();
+        this.dispatchEvent(new CustomEvent('endsession'));
+    }
+
     get isMember() {
         return this.snapshotData?.recordType === 'Member';
     }
