@@ -18,14 +18,14 @@ export default class Aa_interaction360 extends LightningElement {
 	@track statusMessage = '';
 	customerInteractionId;
 	isI360Enabled = false;
-	
+
 	i360Logged = false;
 
 	@wire(MessageContext)
 	messageContext;
 	connectedCallback() {
 		this.subscribeToAgentAssistMessageChannel();
-		this.handleStateLoad();	
+		this.handleStateLoad();
 		this.handleInitialization();
 	}
 
@@ -56,7 +56,7 @@ export default class Aa_interaction360 extends LightningElement {
 					'Interaction360 handleStateLoad: Restored Customer Interaction ID: ' + this.customerInteractionId
 				);
 			}
-			
+
 			const cachedExpanded = localStorage.getItem('aa_interaction_is_expanded');
 
 			if (cachedExpanded !== null) {
@@ -72,9 +72,9 @@ export default class Aa_interaction360 extends LightningElement {
 		try {
 			console.log(
 				'Interaction360 saveState: Saving ' +
-					this.callHistories.length +
-					' items. CustomerID: ' +
-					this.customerInteractionId
+				this.callHistories.length +
+				' items. CustomerID: ' +
+				this.customerInteractionId
 			);
 			localStorage.setItem('aa_interaction_history_cache', JSON.stringify(this.callHistories));
 			if (this.customerInteractionId) {
@@ -180,12 +180,12 @@ export default class Aa_interaction360 extends LightningElement {
 				return;
 			}
 			const { content } = messageData;
-			
+
 			const formattedData = content.map(({ header, body }, index) => {
 				const dateRaw = header.date || '';
 				const title = header.summary_title || '';
 				const summary = body?.summary?.text || '';
-				
+
 				const dateLabel = this.formatInteractionDate(dateRaw);
 
 				const actionsList = (body?.actions_taken || [])
@@ -250,11 +250,11 @@ export default class Aa_interaction360 extends LightningElement {
 
 	checkAndSetInteractionContext(newInteractionId) {
 		if (newInteractionId && this.customerInteractionId && this.customerInteractionId !== newInteractionId) {
-		
+
 			this.callHistories = [];
 			this.errorMessage = '';
 			localStorage.removeItem('aa_interaction_history_cache');
-			
+
 		}
 		this.customerInteractionId = newInteractionId;
 		this.saveState();
@@ -263,21 +263,21 @@ export default class Aa_interaction360 extends LightningElement {
 	clearInteraction(message) {
 		console.log(
 			'Interaction360 clearInteraction: Received END_INTERACTION. Current CustomerID: ' +
-				this.customerInteractionId
+			this.customerInteractionId
 		);
-		
+
 		if (this.customerInteractionId && message?.VoiceCallData && this.customerInteractionId !== message.VoiceCallData.Interaction_Id__c) {
 			console.log(
 				'Interaction360 clearInteraction: Mismatch in Customer Interaction ID, SKIPPING CLEAR. ' +
-					this.customerInteractionId +
-					' vs ' +
-					message.VoiceCallData.Interaction_Id__c
+				this.customerInteractionId +
+				' vs ' +
+				message.VoiceCallData.Interaction_Id__c
 			);
 			return;
 		}
 		console.log('Interaction360 clearInteraction: CLEARING DATA NOW.');
 		this.callHistories = [];
-		this.customerInteractionId = null; 
+		this.customerInteractionId = null;
 
 		if (!this.i360Logged) {
 			let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
@@ -297,7 +297,7 @@ export default class Aa_interaction360 extends LightningElement {
 		localStorage.removeItem('aa_interaction_customer_id');
 		localStorage.removeItem('aa_interaction_is_expanded');
 		this.saveState();
-		this.updateStatusMessage(false, true);		
+		this.updateStatusMessage(false, true);
 	}
 
 	showError(message) {
@@ -309,7 +309,7 @@ export default class Aa_interaction360 extends LightningElement {
 	}
 	handleInitialization() {
 		this.errorMessage = '';
-		if (this.callHistories.length === 0 ) {
+		if (this.callHistories.length === 0) {
 			this.updateStatusMessage(true, false);
 		}
 
@@ -390,18 +390,18 @@ export default class Aa_interaction360 extends LightningElement {
 		return this.isI360Enabled && this.showInteraction;
 	}
 
-	handleCopyInteraction360() {		
+	handleCopyInteraction360() {
 		let splunkJsonString = JSON.stringify(AgentAssistSplunkLoggingUtils.splunk_outer_context(
-							'aa_interaction360.js',
-							localStorage.getItem('agentAssistGenesysInteractionId'),
-							userId,
-							'INFO',
-							AgentAssistSplunkLoggingUtils.splunk_inner_context(
-								localStorage.getItem('agentAssistVoiceCallId')
-							),
-							'Interaction360_Copied'
-						));
-		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });					
-	}	
+			'aa_interaction360.js',
+			localStorage.getItem('agentAssistGenesysInteractionId'),
+			userId,
+			'INFO',
+			AgentAssistSplunkLoggingUtils.splunk_inner_context(
+				localStorage.getItem('agentAssistVoiceCallId')
+			),
+			'Interaction360_Copied'
+		));
+		LWCSplunkLogger({ jsonString: splunkJsonString, eventName: 'AgentAssistUsageEvent' });
+	}
 
 }

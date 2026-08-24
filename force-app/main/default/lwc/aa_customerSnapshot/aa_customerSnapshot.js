@@ -32,6 +32,10 @@ export default class AaCustomerSnapshot extends LightningElement {
         return this.snapshotData?.recordType === 'Lead';
     }
 
+    get isPastMember() {
+        return this.snapshotData?.recordType === 'Past Member';
+    }
+
     get showVeteranBadge() {
         return (
             typeof this.snapshotData?.veteran === 'string' &&
@@ -98,4 +102,5 @@ export default class AaCustomerSnapshot extends LightningElement {
 
         return `${Number(month)}/${Number(day)}/${year}`;
     }
+    
 }

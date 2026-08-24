@@ -382,21 +382,36 @@ export default class AgentAssistWebsocket {
                             }
                         });
 
-                    if(isLiveTranscriptionEnabled && hasLiveTranscriptionPermission){
-                        this.websocket.on(AgentAssistLabels.LIVE_TRANSCRIPTION, (data, ack) => {
+                        if(isLiveTranscriptionEnabled && hasLiveTranscriptionPermission){
+                            this.websocket.on(AgentAssistLabels.LIVE_TRANSCRIPTION, (data, ack) => {
+                                try {
+                                const messageContext = createMessageContext();
+                                publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.LIVE_TRANSCRIPTION, data: data});
+                                // ✅ Send ACK back to server (include whatever the server expects)
+                                    if (typeof ack === 'function') {
+                                        ack(true); // if server expects a boolean
+                                    }
+                                } catch (err) {
+                                    console.error('live_transcription error', err);
+                                    LWCLogger({ messageText: "live_transcription error; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') + " Error " + JSON.stringify(err), source: " aa_UtilsHum | setupWebSocketIoClient | live_transcription", level: "error"});
+                                }
+                            });
+                        }
+
+                        this.websocket.on(AgentAssistLabels.COACHING_COMPLIANCE, (data, ack) => {
                             try {
                             const messageContext = createMessageContext();
-                            publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.LIVE_TRANSCRIPTION, data: data});
+                            publish(messageContext, VOICE_CALL_CHANNEL, {type: AgentAssistLabels.COACHING_COMPLIANCE, data: data});
                             // ✅ Send ACK back to server (include whatever the server expects)
                                 if (typeof ack === 'function') {
                                     ack(true); // if server expects a boolean
                                 }
+                            LWCLogger({ messageText: "coaching_compliance Ack returned; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId')  + " Payload " + JSON.stringify(data), source: " aa_UtilsHum | setupWebSocketIoClient | coaching_compliance", level: "info"});
                             } catch (err) {
-                                console.error('live_transcription error', err);
-                                LWCLogger({ messageText: "live_transcription error; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') + " Error " + JSON.stringify(err), source: " aa_UtilsHum | setupWebSocketIoClient | live_transcription", level: "error"});
+                                console.error('coaching_compliance error', err?.message);
+                                LWCLogger({ messageText: "coaching_compliance error; Interaction ID: " + localStorage.getItem('agentAssistGenesysInteractionId') + " Error " + JSON.stringify(err), source: " aa_UtilsHum | setupWebSocketIoClient | coaching_compliance", level: "error"});
                             }
-                        });
-                    }
+                        });                   
 
                     });
                     console.log("aa_UtilsHum | setupWebSocketIoClient | after loadScript");
@@ -425,6 +440,7 @@ export default class AgentAssistWebsocket {
         const timeout = 10001;//(callout.timeout != null ? parseInt(callout.timeout) : 10001);
         let attempts = 1;
         var result;
+        let interactionIdType = localStorage.getItem('aa_interactionIdType');
         if(this.websocket != null && this.websocket?.connected){
             while (attempts <= maxAttempts && this.websocket?.connected) {
                 try {
@@ -439,10 +455,14 @@ export default class AgentAssistWebsocket {
                             else {
                                 console.log('aa_UtilsHum | emitEvent | eventType: ' + eventType + ', Received ack: ' + result + ' @ ', new Date().toISOString());
                                 console.log('aa_UtilsHum | emitEvent | eventType: ' + eventType + ', data: ' + data);
-                                localStorage.setItem('aa_eventEmitted',eventType + ', Received ack: ' + result + ' @ ', new Date().toString());
+                                localStorage.setItem('aa_eventEmitted',eventType + ', Received ack: ' + result + ' @ '+ new Date().toString());
                                 if(eventType == AgentAssistLabels.SET_INTERACTION_CONTEXT && data && data != null && data != "") {
                                     console.log('aa_UtilsHum | emitEvent | Publishing update_interaction');
                                     console.log('aa_UtilsHum | emitEvent | ' + eventType + ' data:' + JSON.stringify(data));
+                                }
+                                if(eventType == AgentAssistLabels.END_INTERACTION && interactionIdType=='non-telephonic' ){
+                                    localStorage.setItem('aa_endInteractionEmitted',eventType + ', Received ack: ' + result + ' @ '+ new Date().toString());
+                                    localStorage.setItem('aa_endEmitted',eventType + ', Received ack: ' + result + ' @ '+ new Date().toString());
                                 }
                                 resolve(result);
                             }
@@ -512,8 +532,10 @@ export const AgentAssistLabels = {
     CONNECTION_END:'connection_end',
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
-    LIVE_TRANSCRIPTION: "live_transcription",
-    REMOVE_CUSTOMER_CONTEXT: 'remove_customer_context'
+	LIVE_TRANSCRIPTION: "live_transcription",
+	REMOVE_CUSTOMER_CONTEXT: 'remove_customer_context',
+    COACHING_COMPLIANCE: "coaching_compliance",
+    NON_TELEPHONIC_CUSTOMER_CONTEXT : "non_telephonic_Customer_context"
 }
 
 export const AgentAssistEvents = {

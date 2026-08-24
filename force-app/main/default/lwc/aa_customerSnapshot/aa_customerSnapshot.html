@@ -1,24 +1,24 @@
 <template>
-    <div class="snapshot-card">
+        <div class="snapshot-card">
 
-        <div class="snapshot-header" onclick={toggleSnapshot}>
+            <div class="snapshot-header" onclick={toggleSnapshot}>
 
-            <div class="header-left">
+                <div class="header-left">
 
-                <lightning-icon
-                    icon-name="utility:user"
-                    size="x-small">
-                </lightning-icon>
+                    <lightning-icon
+                        icon-name="utility:user"
+                        size="x-small">
+                    </lightning-icon>
 
-                <span class="customer-label">
-                    Customer
-                </span>
+                    <span class="customer-label">
+                        Customer
+                    </span>
 
-                <span class="caller-name">
-                    {callerNameDisplay}
-                </span>
+                    <span class="caller-name">
+						{callerNameDisplay}
+                    </span>
 
-            </div>
+                </div>
 
             <div class="header-right" style="display:flex; align-items:center; gap: 10px;">
                 <lightning-button 
@@ -34,94 +34,106 @@
                 </lightning-icon>
             </div>
 
-        </div>
+            </div>
 
-        <template if:true={isExpanded}>
-            <template if:true={snapshotData}>
+            <template if:true={isExpanded}>
+				<template if:true={snapshotData}>
 
-                <div class="snapshot-row">
-                    <strong>Preferred Name:</strong>
-                    <span class="field-value preferred-name-value">
-                        {snapshotData.preferredName}
-                    </span>
-                </div>
+					<div class="snapshot-row">
+						<strong>Preferred Name:</strong>
+						<span class="field-value preferred-name-value">
+							{snapshotData.preferredName}
+						</span>
+					</div>
 
-                <div class="snapshot-row dob-row">
-                    <strong>Date of Birth:</strong>
-                    <span class="field-value dob-value">
-                        {formattedDob}
-                    </span>
-                </div>
+					<div class="snapshot-row dob-row">
+						<strong>Date of Birth:</strong>
+						<span class="field-value dob-value">
+							{formattedDob}
+						</span>
+					</div>
 
-                <div class="badge-row">
+					<div class="badge-row">
 
-                    <template if:true={isMember}>
-                        <div class="badge">
-                            <lightning-icon
-                                icon-name="utility:user"
-                                size="xx-small"
-                                class="badge-icon">
-                            </lightning-icon>
+						<template if:true={isMember}>
+							<div class="badge">
+								<lightning-icon
+									icon-name="utility:user"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-                            <span>Member</span>
-                        </div>
-                    </template>
+								<span>Member</span>
+							</div>
+						</template>
 
-                    <template if:true={isLead}>
-                        <div class="badge">
-                            <lightning-icon
-                                icon-name="utility:user"
-                                size="xx-small"
-                                class="badge-icon">
-                            </lightning-icon>
+						<template if:true={isLead}>
+							<div class="badge">
+								<lightning-icon
+									icon-name="utility:user"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-                            <span>Lead</span>
-                        </div>
-                    </template>
+								<span>Lead</span>
+							</div>
+						</template>
 
-                    <template if:true={showVeteranBadge}>
-                        <div class="badge">
-                            <lightning-icon
-                                icon-name="utility:favorite"
-                                size="xx-small"
-                                class="badge-icon">
-                            </lightning-icon>
+						<template if:true={isPastMember}>
+							<div class="badge">
+								<lightning-icon
+									icon-name="utility:user"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-                            <span>Veteran</span>
-                        </div>
-                    </template>
+								<span>Past Member</span>
+							</div>
+						</template>
 
-                    <template if:true={showApplicationStatusBadge}>
-                        <div class="badge">
-                            <lightning-icon
-                                icon-name="utility:info"
-                                size="xx-small"
-                                class="badge-icon">
-                            </lightning-icon>
+						<template if:true={showVeteranBadge}>
+							<div class="badge">
+								<lightning-icon
+									icon-name="utility:favorite"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-                            <span>
-                                Lead Status - {snapshotData.applicationStatus}
-                            </span>
-                        </div>
-                    </template>
+								<span>Veteran</span>
+							</div>
+						</template>
 
-                    <template if:true={showBirthdayBadge}>
-                        <div class="badge birthday">
-                            <lightning-icon
-                                icon-name="utility:event"
-                                size="xx-small"
-                                class="badge-icon">
-                            </lightning-icon>
+						<template if:true={showApplicationStatusBadge}>
+							<div class="badge">
+								<lightning-icon
+									icon-name="utility:note"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-                            <span>
-                                Birthday in {birthdayDaysRemaining} days
-                            </span>
-                        </div>
-                    </template>
+								<span>
+									Lead Status - {snapshotData.applicationStatus}
+								</span>
+							</div>
+						</template>
 
-                </div>
+						<template if:true={showBirthdayBadge}>
+							<div class="badge birthday">
+								<lightning-icon
+									icon-name="utility:event"
+									size="xx-small"
+									class="badge-icon">
+								</lightning-icon>
 
-            </template>
+								<span>
+									Birthday in {birthdayDaysRemaining} days
+								</span>
+							</div>
+						</template>
+
+					</div>
+
+				</template>
             </template>
         </div>
 </template>
