@@ -95,7 +95,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	@track snapshotData;
 
 	//nontelephonic
-	isNonTelephonic;
+	@track isNonTelephonic;
 	interactionIdType;
 	interactionId;
 	isEventPublished;
