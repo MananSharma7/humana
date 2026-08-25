@@ -533,7 +533,6 @@ export const AgentAssistLabels = {
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
 	LIVE_TRANSCRIPTION: "live_transcription",
-	REMOVE_CUSTOMER_CONTEXT: 'remove_customer_context',
     COACHING_COMPLIANCE: "coaching_compliance",
     NON_TELEPHONIC_CUSTOMER_CONTEXT : "non_telephonic_Customer_context"
 }
@@ -642,16 +641,6 @@ export const AgentAssistEvents = {
         }
     }),
 
-    remove_customer_context: (interaction_id) => ({
-        version: "0.1",
-        event_type: "remove_customer_context",
-        data: {
-            card_metadata: {
-                interaction_id: interaction_id,
-                interaction_id_type: "voice"
-            }
-        }
-    }),
 
     set_customer_context: (customer_type, enterprise_person_id, customer_id, interaction_id, get_historical_interactions_flag) => ({
         version: "0.1",

@@ -134,7 +134,6 @@ export default class Aa_interaction360 extends LightningElement {
 					this.showError('We are unable to retrieve Interaction360');
 					break;
 				case AgentAssistLabels.END_INTERACTION:
-				case AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT:
 					this.clearInteraction(message);
 					break;
 				default:

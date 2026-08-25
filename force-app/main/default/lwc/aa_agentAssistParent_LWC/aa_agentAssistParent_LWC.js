@@ -99,10 +99,11 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	handleEndSession() {
-		this.websocket.emitEvent(
-			AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT,
-			AgentAssistEvents.remove_customer_context(this.genesysInteractionId)
-		);
+		publish(this.messageContext, VOICE_CALL_CHANNEL, {
+			type: AgentAssistLabels.END_INTERACTION,
+			data: { interactionId : this.genesysInteractionId }
+		});
+		this.endInteraction(this.genesysInteractionId);
 	}
 
 	//nontelephonic
@@ -360,27 +361,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					this.handlePopOutLogCall();
 					break;
 				case AgentAssistLabels.SET_CUSTOMER_CONTEXT:
-					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | SET_CUSTOMER_CONTEXT | TELEPHONIC_CUSTOMER_CONTEXT');
+					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | SET_CUSTOMER_CONTEXT');
 					if(message?.VoiceCallData?.RelatedRecordId && this.userSalesforceId === message?.VoiceCallData?.CreatedById){
 						this.getRelatedRecordDetails(message.VoiceCallData.RelatedRecordId);
 					}
-					break;
-				case AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT:
-					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | REMOVE_CUSTOMER_CONTEXT');
-					this.snapshotData = null;
-					this.memberID = null;
-					this.sdrPersonId = null;
-					this.custId = null;
-					this.memberType = null;
-					this.relatedRecordId = null;
-					this.interactingAboutMemberId = null;
-					
-					localStorage.removeItem('agentAssistRelatedRecordId');
-					localStorage.removeItem('agentAssistInteractingMemberId');
-
-					publish(this.messageContext, VOICE_CALL_CHANNEL, {
-						type: AgentAssistLabels.REMOVE_CUSTOMER_CONTEXT
-					});
 					break;
 				case AgentAssistLabels.AGENT_FEEDBACK:
 					console.log('aa_agentAssistParent_LWC | handleAgentAssistMessage | agent_feedback');
