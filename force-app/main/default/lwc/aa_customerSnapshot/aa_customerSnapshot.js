@@ -2,6 +2,7 @@ import { LightningElement, api } from 'lwc';
 
 export default class AaCustomerSnapshot extends LightningElement {
     @api snapshotData;
+    @api isNonTelephonic;
 
     isExpanded = true;
 

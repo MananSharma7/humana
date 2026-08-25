@@ -21,13 +21,15 @@
                 </div>
 
             <div class="header-right" style="display:flex; align-items:center; gap: 10px;">
-                <lightning-button 
-                    label="End Session" 
-                    variant="destructive" 
-                    onclick={handleEndSession}
-                    class="end-session-btn"
-                    icon-name="utility:power">
-                </lightning-button>
+                <template if:true={isNonTelephonic}>
+                    <lightning-button 
+                        label="End Session" 
+                        variant="destructive" 
+                        onclick={handleEndSession}
+                        class="end-session-btn"
+                        icon-name="utility:power">
+                    </lightning-button>
+                </template>
                 <lightning-icon
                     icon-name={accordionIcon}
                     size="x-small">

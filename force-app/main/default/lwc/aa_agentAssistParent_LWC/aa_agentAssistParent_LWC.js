@@ -1488,7 +1488,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	get showTranscriptButton(){
-		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
+		return !this.isNonTelephonic && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
 	
 
