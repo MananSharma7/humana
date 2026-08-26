@@ -1482,7 +1482,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	get showTranscriptButton(){
-		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
+		const type = localStorage.getItem('aa_interactionIdType');
+		return type !== 'non-telephonic' && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
 	
 
