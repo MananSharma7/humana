@@ -68,14 +68,15 @@
 .badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 6px 8px;
     border: 1px solid #e5e5e5;
     border-radius: 6px;
     background: #ffffff;
     font-size: 12px;
     font-weight: 600;
     color: #1c1c1c;
+    white-space: nowrap;
 }
 
 .badge-icon {

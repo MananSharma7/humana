@@ -95,7 +95,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	@track snapshotData;
 
 	//nontelephonic
-	@track isNonTelephonic;
+	isNonTelephonic;
 	interactionIdType;
 	interactionId;
 	isEventPublished;
@@ -216,6 +216,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		this.isPopoutMode = window.location.href.includes('popout') || window.location.search.includes('windowed');
 		if(this.isPopoutMode){
 			this.popedOutSplunkLog();
+			localStorage.setItem('aa_poppedOut','true');
 		}
 		if (localStorage.getItem('agentAssistGenesysInteractionId')) {
 			this.startUtilityMonitor();
@@ -462,6 +463,9 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					if (this.isErrorFrameworkEnabled) {
 						this.handleSetCustomerContextNotification(message.data);
 					}
+					break;
+				case AgentAssistLabels.COACHING_COMPLIANCE:
+					console.log('COACHING_COMPLIANCE ');
 					break;
 				default:
 			}
@@ -1478,7 +1482,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	}
 
 	get showTranscriptButton(){
-		return !this.isNonTelephonic && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
+		return this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
 	
 
@@ -1715,6 +1719,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			console.log('!hasEventPublished->',!hasEventPublished);
 			console.log('isSessionRequestPending->',isSessionRequestPending);
 			
+			const wasPoppedOut = localStorage.getItem('aa_poppedOut');
+
+			/*if(wasPoppedOut === 'true'){
+				console.log('wasPoppedOut-->',wasPoppedOut);
+				localStorage.removeItem('aa_poppedOut');
+				return;
+			}else{
+				 if (hasAgentAssistPermission && isVisible && !hasEventPublished && !hasSessionId && this.isNonTelephonic) {
+					localStorage.setItem('aa_nonTelephonicEventPublished', 'true');
+					this.sendInteractionContextNonTelephonic();
+					console.log('Utility clicked ');
+            	}
+			}*/
 			//event is already active
 			if(hasEventPublished) return;
 			//Prevent rapid fire SF internal call at the same time
