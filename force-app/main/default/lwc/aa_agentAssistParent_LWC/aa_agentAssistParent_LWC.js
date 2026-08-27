@@ -100,6 +100,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	interactionId;
 	isEventPublished;
 	utilityClickUnsubscribe;
+	@track isEndSession = true;
 
 	get isCustomerContextActive() {
 		return !!this.snapshotData || !!this.memberID;
@@ -207,6 +208,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		
 		this.isErrorFrameworkEnabled = await isFeatureEnabled({ featureName: 'AA_Error_Framework' });
 		this.isNonTelephonic = await hasNoVoiceCall({ loggedinUserId : userId });
+		this.isEndSession = this.isNonTelephonic;
 		if (this.utilityId && this.isNonTelephonic) {
 			this.utilityClickUnsubscribe = onUtilityClick(
 				this.utilityId,
@@ -493,6 +495,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				this.recordId = null;
 				this.relatedRecordId = null;
 				this.snapshotData = null;
+				this.isEndSession = false;
 				this.stopUtilityMonitor();
 				isSessionRequestPending = false;
 				localStorage.removeItem('agentAssistVoiceCallId');
@@ -1321,7 +1324,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			console.log('reached handleSetInteractionContextNotification');
 			let intContNotError = '';
 			if (message?.error?.error_status) {
-				localStorage.setItem('int_context_error', message?.error?.error_status || '');
+				localStorage.setItem('int_context_error', String(!!message?.error?.error_status));
 				localStorage.setItem('int_context_error_message', message?.error?.user_message || '');
 				this.isIntContextError = true;
 				intContNotError = message?.error?.user_message;
@@ -1343,10 +1346,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					//Using same variable name for non-telephonic to make sure existing code works everywhere with same variable name
 					this.genesysInteractionId = message?.data?.interaction_id;	
 					localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
-	
+					this.isEndSession = true;
 				}
-				localStorage.setItem('int_context_error', '');
-				localStorage.setItem('int_context_error_message', '');
+				localStorage.removeItem('int_context_error');
+				localStorage.removeItem('int_context_error_message');
 				this.isIntContextError = false;
 				this.intContErrorMessage = '';
 				LWCLogger({
@@ -1370,7 +1373,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		try {
 			let custContNotError = '';
 			if (message?.error?.error_status) {
-				localStorage.setItem('cust_context_error', message?.error?.error_status || '');
+				localStorage.setItem('cust_context_error', String(!!message?.error?.error_status));
 				localStorage.setItem('cust_context_error_message', message?.error?.user_message || '');
 				this.isCustContextError = true;
                 custContNotError = message?.error?.user_message;
@@ -1385,8 +1388,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					level: 'info'
 				});
 			} else {
-				localStorage.setItem('cust_context_error', '');
-				localStorage.setItem('cust_context_error_message', '');
+				localStorage.removeItem('cust_context_error');
+				localStorage.removeItem('cust_context_error_message');
 				this.isCustContextError = false;
 				this.custContErrorMessage = '';
 				LWCLogger({
@@ -1413,28 +1416,30 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			const cachedIntErrorMsg = localStorage.getItem('int_context_error_message');
 			const cachedCustErrorStatus = localStorage.getItem('cust_context_error');
 			const cachedCustErrorMsg = localStorage.getItem('cust_context_error_message');
-			if (cachedIntErrorStatus) {
-				this.isIntContextError = this.sanitize(cachedIntErrorStatus);
-				this.intContErrorMessage = this.sanitize(cachedIntErrorMsg);
-			} else {
-				this.isIntContextError = false;
-				this.intContErrorMessage = '';
-			}
-			if (cachedCustErrorStatus) {
-				this.isCustContextError = this.sanitize(cachedCustErrorStatus);
-				this.custContErrorMessage = this.sanitize(cachedCustErrorMsg);
-			} else {
-				this.isCustContextError = false;
-				this.custContErrorMessage = '';
-			}
+			
+			this.isIntContextError =
+            cachedIntErrorStatus ? this.sanitize(cachedIntErrorStatus) === 'true' : false;
+
+        	this.intContErrorMessage =
+            cachedIntErrorMsg ? this.sanitize(cachedIntErrorMsg) : '';
+
+        	this.isCustContextError =
+            cachedCustErrorStatus ? this.sanitize(cachedCustErrorStatus) === 'true' : false;
+
+        	this.custContErrorMessage =
+            cachedCustErrorMsg ? this.sanitize(cachedCustErrorMsg) : '';
+
 		} catch (e) {
-			console.error('aa_agentAssistParent_LWC | handleContextError | Error loading sessionStorage', e);
+			console.error('aa_agentAssistParent_LWC | handleContextError | Error loading localStorage', e?.message);
 		}
 	}
 
 	sanitize(str) {
-        // Only allow alphabets and spaces
-        return str.replace(/[^a-z\s]/gi, '');
+        // Only allow alphabets and spaces and periods
+        if (!str) {
+        	return '';
+    	}
+    	return str.replace(/[^a-z.\s]/gi, '');
 	}
 
 	async handleOpenAAUtility() {
@@ -1485,7 +1490,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		const type = localStorage.getItem('aa_interactionIdType');
 		return type !== 'non-telephonic' && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
-	
 
 	popedOutSplunkLog(){
 		

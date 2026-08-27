@@ -2,7 +2,7 @@ import { LightningElement, api } from 'lwc';
 
 export default class AaCustomerSnapshot extends LightningElement {
     @api snapshotData;
-    @api isNonTelephonic;
+    @api isEndSession;
 
     isExpanded = true;
 
@@ -25,12 +25,7 @@ export default class AaCustomerSnapshot extends LightningElement {
         this.dispatchEvent(new CustomEvent('endsession'));
     }
 
-    get isNonTelephonicSession() {
-        const interactionType = localStorage.getItem('aa_interactionIdType');
-        const sessionId = localStorage.getItem('aa_sessionId');
-        
-        return interactionType === 'non-telephonic' && sessionId !== null && sessionId !== '';
-    }
+
 
     get isMember() {
         return this.snapshotData?.recordType === 'Member';
