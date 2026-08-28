@@ -533,8 +533,7 @@ export const AgentAssistLabels = {
     SET_INTERACTION_CONTEXT_NOTIFICATION:"set_interaction_context_notification",
     SET_CUSTOMER_CONTEXT_NOTIFICATION: "set_customer_context_notification",
 	LIVE_TRANSCRIPTION: "live_transcription",
-    COACHING_COMPLIANCE: "coaching_compliance",
-    NON_TELEPHONIC_CUSTOMER_CONTEXT : "non_telephonic_Customer_context"
+    COACHING_COMPLIANCE: "coaching_compliance"
 }
 
 export const AgentAssistEvents = {
@@ -642,7 +641,7 @@ export const AgentAssistEvents = {
     }),
 
 
-    set_customer_context: (customer_type, enterprise_person_id, customer_id, interaction_id, get_historical_interactions_flag) => ({
+    set_customer_context: (customer_type, enterprise_person_id, customer_id, interaction_id, get_historical_interactions_flag,interaction_id_type) => ({
         version: "0.1",
         event_type: "set_customer_context",
         data: {
@@ -654,7 +653,7 @@ export const AgentAssistEvents = {
             },
             get_historical_interactions: (get_historical_interactions_flag === true || get_historical_interactions_flag === false) ? get_historical_interactions_flag : "true",
             interaction_id: interaction_id,
-            interaction_id_type: "voice"
+            interaction_id_type: interaction_id_type
             }
         }
     }),
