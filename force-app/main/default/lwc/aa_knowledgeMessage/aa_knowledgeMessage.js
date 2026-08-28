@@ -1011,7 +1011,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		} else {
 			const feedbackValue = isUndoing ? null : true;
 			const feedbackText = isUndoing ? 'Neutral' : 'Liked';
-			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId);
+			const interactionIdType = localStorage.getItem('aa_interactionIdType') || 'voice';
+			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId, interactionIdType);
 			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		}
 
@@ -1152,7 +1153,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 		} else {
 			const feedbackValue = isUndoing ? null : false;
 			const feedbackText = isUndoing ? 'Neutral' : 'Disliked';
-			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId);
+			const interactionIdType = localStorage.getItem('aa_interactionIdType') || 'voice';
+			data = AgentAssistEvents.agent_feedback(feedbackValue, feedbackText, cardId, this.interactionId, interactionIdType);
 			label = isUndoing ? 'Feedback updated.' : 'Thank you for your feedback!';
 		}
 
@@ -1227,7 +1229,8 @@ export default class Aa_knowledgeMessage extends LightningElement {
 				}
 			};
 		} else {
-			data = AgentAssistEvents.agent_feedback(false, selectedReason, cardId, this.interactionId);
+			const interactionIdType = localStorage.getItem('aa_interactionIdType') || 'voice';
+			data = AgentAssistEvents.agent_feedback(false, selectedReason, cardId, this.interactionId, interactionIdType);
 		}
 
 		try {

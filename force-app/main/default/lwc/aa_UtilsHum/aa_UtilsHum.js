@@ -550,14 +550,14 @@ export const AgentAssistEvents = {
           token: newtoken
         }
     }),
-    agent_feedback: (feedback_value, feedback_text, card_id, interaction_id) => ({
+    agent_feedback: (feedback_value, feedback_text, card_id, interaction_id, interaction_id_type) => ({
         version: "1.0",
         event_type: "agent_feedback_event",
         data: {
             card_metadata: {
                 interaction_id: interaction_id,
                 card_id: card_id,
-                interaction_id_type: "voice"
+                interaction_id_type: interaction_id_type || 'voice'
             },
             feedback: {
                 feedback_text: feedback_text,
