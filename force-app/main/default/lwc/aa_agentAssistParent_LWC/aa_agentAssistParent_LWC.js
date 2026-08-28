@@ -208,7 +208,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		
 		this.isErrorFrameworkEnabled = await isFeatureEnabled({ featureName: 'AA_Error_Framework' });
 		this.isNonTelephonic = await hasNoVoiceCall({ loggedinUserId : userId });
-		this.isEndSession = this.isNonTelephonic;
+		this.isEndSession = this.isNonTelephonic && localStorage.getItem('aa_sessionId') !== null;
 		if (this.utilityId && this.isNonTelephonic) {
 			this.utilityClickUnsubscribe = onUtilityClick(
 				this.utilityId,

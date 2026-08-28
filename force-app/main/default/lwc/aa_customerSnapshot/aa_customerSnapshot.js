@@ -2,7 +2,7 @@ import { LightningElement, api } from 'lwc';
 
 export default class AaCustomerSnapshot extends LightningElement {
     @api snapshotData;
-    @api isEndSession;
+    @api endSessionVisible;
 
     isExpanded = true;
 
