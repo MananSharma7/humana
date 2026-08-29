@@ -1105,7 +1105,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 									this.sdrPersonId,
 									this.custId,
 									this.genesysInteractionId,
-									true
+									true,
+									this.interactionIdType
 							)
 						);
                     }
