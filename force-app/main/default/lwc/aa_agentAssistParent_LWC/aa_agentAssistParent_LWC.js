@@ -744,8 +744,8 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				
             }
         } catch(error) {
-
-            LWCLogger({messageText: 'Error in publishInteractionContext: '+error, source: 'createWebSocketIoClient', level: 'error'});
+			console.error('aa_agentAssistParent_LWC | sendInteractionContext | Error while clearing last interaction details',error?.message)
+            LWCLogger({messageText: 'Error in publishInteractionContext: '+error, source: 'aa_agentAssistParent_LWC | sendInteractionContext', level: 'error'});
 
         }
 
@@ -1349,8 +1349,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
 					this.isEndSession = true;
 				}
-				localStorage.removeItem('int_context_error');
-				localStorage.removeItem('int_context_error_message');
 				this.isIntContextError = false;
 				this.intContErrorMessage = '';
 				LWCLogger({
@@ -1389,8 +1387,6 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					level: 'info'
 				});
 			} else {
-				localStorage.removeItem('cust_context_error');
-				localStorage.removeItem('cust_context_error_message');
 				this.isCustContextError = false;
 				this.custContErrorMessage = '';
 				LWCLogger({
@@ -1406,7 +1402,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		} catch (e) {
 			console.error(
 				'aa_agentAssistParent_LWC | handleSetCustomerContextNotification | Error in handleSetCustomerContextNotification',
-				e
+				e?.message
 			);
 		}
     }
@@ -1418,17 +1414,10 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			const cachedCustErrorStatus = localStorage.getItem('cust_context_error');
 			const cachedCustErrorMsg = localStorage.getItem('cust_context_error_message');
 			
-			this.isIntContextError =
-            cachedIntErrorStatus ? this.sanitize(cachedIntErrorStatus) === 'true' : false;
-
-        	this.intContErrorMessage =
-            cachedIntErrorMsg ? this.sanitize(cachedIntErrorMsg) : '';
-
-        	this.isCustContextError =
-            cachedCustErrorStatus ? this.sanitize(cachedCustErrorStatus) === 'true' : false;
-
-        	this.custContErrorMessage =
-            cachedCustErrorMsg ? this.sanitize(cachedCustErrorMsg) : '';
+			this.isIntContextError = cachedIntErrorStatus ? this.sanitize(cachedIntErrorStatus) === 'true' : false;
+        	this.intContErrorMessage = cachedIntErrorMsg ? this.sanitize(cachedIntErrorMsg) : '';
+        	this.isCustContextError = cachedCustErrorStatus ? this.sanitize(cachedCustErrorStatus) === 'true' : false;
+        	this.custContErrorMessage = cachedCustErrorMsg ? this.sanitize(cachedCustErrorMsg) : '';
 
 		} catch (e) {
 			console.error('aa_agentAssistParent_LWC | handleContextError | Error loading localStorage', e?.message);
