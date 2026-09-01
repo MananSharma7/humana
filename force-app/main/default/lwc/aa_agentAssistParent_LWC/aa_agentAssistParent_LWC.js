@@ -1742,13 +1742,19 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 			isSessionRequestPending = true;
 					
 			if (hasAgentAssistPermission && !hasEventPublished &&  this.isNonTelephonic) {
-				this.sendInteractionContextNonTelephonic();
-				console.log('Utility clicked ');
+				// this.sendInteractionContextNonTelephonic(); // Removed auto-start for AC1
+				console.log('Utility clicked - awaiting user to manually start session');
 			}
         } catch (error) {
             console.error('aa_agentAssistParent_LWC | handleUtilityClick | Error handling utility click:', error?.message);
         }
     }
+
+	handleStartSession() {
+		if (this.isNonTelephonic) {
+			this.sendInteractionContextNonTelephonic();
+		}
+	}
 
 	sendInteractionContextNonTelephonic(){
 		try {

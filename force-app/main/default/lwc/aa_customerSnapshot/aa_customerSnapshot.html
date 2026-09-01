@@ -21,14 +21,16 @@
                 </div>
 
             <div class="header-right" style="display:flex; align-items:center; gap: 10px;">
-                <template if:true={endSessionVisible}>
-                    <lightning-button 
-                        label="End Session" 
-                        variant="destructive" 
-                        onclick={handleEndSession}
-                        class="end-session-btn"
-                        icon-name="utility:power">
-                    </lightning-button>
+                <template if:true={isNonTelephonic}>
+                    <lightning-input 
+                        type="toggle" 
+                        label="Session" 
+                        variant="label-hidden" 
+                        checked={isSessionActive} 
+                        message-toggle-active="Session Active" 
+                        message-toggle-inactive="Session Inactive" 
+                        onchange={handleToggleSession}>
+                    </lightning-input>
                 </template>
                 <lightning-icon
                     icon-name={accordionIcon}

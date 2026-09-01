@@ -78,7 +78,9 @@
 						<template if:true={showMemberSnapshot}>
 							<c-aa_customer-snapshot
 								snapshot-data={snapshotData}
-                                end-session-visible={isEndSession}
+								is-non-telephonic={isNonTelephonic}
+                                is-session-active={isEndSession}
+								onstartsession={handleStartSession}
 								onendsession={handleEndSession}>
 							</c-aa_customer-snapshot>
 						</template>

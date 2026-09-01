@@ -2,7 +2,8 @@ import { LightningElement, api } from 'lwc';
 
 export default class AaCustomerSnapshot extends LightningElement {
     @api snapshotData;
-    @api endSessionVisible;
+    @api isSessionActive;
+    @api isNonTelephonic;
 
     isExpanded = true;
 
@@ -20,12 +21,14 @@ export default class AaCustomerSnapshot extends LightningElement {
         return this.snapshotData && this.snapshotData.callerName ? this.snapshotData.callerName : 'None';
     }
 
-    handleEndSession(event) {
+    handleToggleSession(event) {
         event.stopPropagation();
-        this.dispatchEvent(new CustomEvent('endsession'));
+        if (event.target.checked) {
+            this.dispatchEvent(new CustomEvent('startsession'));
+        } else {
+            this.dispatchEvent(new CustomEvent('endsession'));
+        }
     }
-
-
 
     get isMember() {
         return this.snapshotData?.recordType === 'Member';
