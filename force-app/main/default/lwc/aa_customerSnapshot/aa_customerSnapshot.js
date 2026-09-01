@@ -23,7 +23,14 @@ export default class AaCustomerSnapshot extends LightningElement {
 
     handleToggleSession(event) {
         event.stopPropagation();
-        if (event.target.checked) {
+		const toggleInput = event.target;
+		
+        toggleInput.disabled = true;
+        setTimeout(() => {
+            toggleInput.disabled = false;
+        }, 1500);
+
+        if (toggleInput.checked) {
             this.dispatchEvent(new CustomEvent('startsession'));
         } else {
             this.dispatchEvent(new CustomEvent('endsession'));
