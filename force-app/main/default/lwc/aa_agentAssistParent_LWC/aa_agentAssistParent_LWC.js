@@ -100,7 +100,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 	interactionId;
 	isEventPublished;
 	utilityClickUnsubscribe;
-	@track isEndSession = true;
+	@track isActiveSession = true;
 
 	get isCustomerContextActive() {
 		return !!this.snapshotData || !!this.memberID;
@@ -208,7 +208,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 		
 		this.isErrorFrameworkEnabled = await isFeatureEnabled({ featureName: 'AA_Error_Framework' });
 		this.isNonTelephonic = await hasNoVoiceCall({ loggedinUserId : userId });
-		this.isEndSession = this.isNonTelephonic && localStorage.getItem('aa_sessionId') !== null;
+		this.isActiveSession = this.isNonTelephonic && localStorage.getItem('aa_sessionId') !== null;
 		if (this.utilityId && this.isNonTelephonic) {
 			this.utilityClickUnsubscribe = onUtilityClick(
 				this.utilityId,
@@ -495,7 +495,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 				this.recordId = null;
 				this.relatedRecordId = null;
 				this.snapshotData = null;
-				this.isEndSession = false;
+				this.isActiveSession = false;
 				this.stopUtilityMonitor();
 				isSessionRequestPending = false;
 				localStorage.removeItem('agentAssistVoiceCallId');
@@ -1347,7 +1347,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 					//Using same variable name for non-telephonic to make sure existing code works everywhere with same variable name
 					this.genesysInteractionId = message?.data?.interaction_id;	
 					localStorage.setItem('agentAssistGenesysInteractionId', this.genesysInteractionId);
-					this.isEndSession = true;
+					this.isActiveSession = true;
 				}
 				this.isIntContextError = false;
 				this.intContErrorMessage = '';
@@ -1478,7 +1478,7 @@ export default class Aa_agentAssistParent_LWC extends LightningElement {
 
 	get showTranscriptButton(){
 		const type = localStorage.getItem('aa_interactionIdType');
-		return type !== 'non-telephonic' && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
+		return type === 'voice' && this.isLiveTranscriptEnabled && hasLiveTranscriptPermission;
 	}
 
 	popedOutSplunkLog(){
